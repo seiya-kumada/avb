@@ -9,6 +9,7 @@ import chainer.functions as F
 # https://qiita.com/halhorn/items/6805b1fd3f8ff74840df
 
 
+# This class represents q(z|x) or z(x,e).
 class Encoder(chainer.Chain):
 
     def __init__(self, x_dim, eps_dim, h_dim=512):
@@ -48,6 +49,54 @@ class Encoder(chainer.Chain):
         return h
 
 
+# This class represents a paramter of p(x|z).
+# Now a paramter of the Bernoulli distribution is calculated.
+class Decoder(chainer.Chain):
+
+    def __init__(self, z_dim, x_dim, h_dim=512):
+        super(Decoder, self).__init__()
+        with self.init_scope():
+            self.l1 = L.Linear(z_dim, h_dim, initialW=xavier.Xavier(z_dim, h_dim))
+            self.l2 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
+            self.l3 = L.Linear(h_dim, x_dim, initialW=xavier.Xavier(h_dim, x_dim))
+
+    def __call__(self, z):
+        h = self.l1(z)
+        h = F.softplus(h)
+
+        h = self.l2(h)
+        h = F.softplus(h)
+
+        h = self.l3(h)
+        return h
+
+
+# This class represents a dicriminator.
+class Discriminator(chainer.Chain):
+
+    def __init__(self, x_dim, z_dim, h_dim=512):
+        super(Discriminator, self).__init__()
+        with self.init_scope():
+            self.xl1 = L.Linear(x_dim, h_dim, initialW=xavier.Xavier(x_dim, h_dim))
+            self.xl2 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
+            self.zl1 = L.Linear(z_dim, h_dim, initialW=xavier.Xavier(z_dim, h_dim))
+            self.zl2 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
+
+    def __call__(self, x, z):
+        hx = self.xl1(x)
+        hx = F.softplus(hx)
+        hx = self.xl2(hx)
+        hx = F.softplus(hx)
+
+        hz = self.zl1(z)
+        hz = F.softplus(hz)
+        hz = self.zl2(hz)
+        hz = F.softplus(hz)
+
+        h = F.sum(hx * hz, axis=1)
+        return h
+
+
 if __name__ == '__main__':
     import unittest
     import numpy as np
@@ -63,5 +112,29 @@ if __name__ == '__main__':
             encoder = Encoder(x_dim, eps_dim)
             z = encoder(x, eps)
             self.assertTrue(z.shape == (batch_size, eps_dim))
+
+    class TestDecoder(unittest.TestCase):
+
+        def test_call(self):
+            batch_size = 3
+            x_dim = 4
+            z_dim = 2
+            z = chainer.Variable(np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32))
+            x = chainer.Variable(np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32))
+            decoder = Decoder(z_dim, x_dim)
+            x = decoder(z)
+            self.assertTrue(x.shape == (batch_size, x_dim))
+
+    class TestDiscriminator(unittest.TestCase):
+
+        def test_call(self):
+            batch_size = 3
+            x_dim = 4
+            z_dim = 2
+            z = chainer.Variable(np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32))
+            x = chainer.Variable(np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32))
+            discriminator = Discriminator(x_dim, z_dim)
+            r = discriminator(x, z)
+            self.assertTrue(r.shape == (batch_size,))
 
     unittest.main()
