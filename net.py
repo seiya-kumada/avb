@@ -53,7 +53,7 @@ class Encoder(chainer.Chain):
 # Now a paramter of the Bernoulli distribution is calculated.
 class Decoder(chainer.Chain):
 
-    def __init__(self, z_dim, x_dim, h_dim=512):
+    def __init__(self, z_dim, x_dim=1, h_dim=512):
         super(Decoder, self).__init__()
         with self.init_scope():
             self.l1 = L.Linear(z_dim, h_dim, initialW=xavier.Xavier(z_dim, h_dim))
@@ -69,6 +69,19 @@ class Decoder(chainer.Chain):
 
         h = self.l3(h)
         return h
+
+
+class ThetaLossCalculator(chainer.Chain):
+
+    def __init__(self, decoder):
+        super(ThetaLossCalculator, self).__init__()
+        self.decoder = decoder
+
+    def __call__(self, x, z):
+        batch_size = x.shape[0]
+        y = self.decoder(z)
+        loss = F.bernoulli_nll(x, y)
+        return loss / batch_size
 
 
 # This class represents a dicriminator.
@@ -92,9 +105,36 @@ class Discriminator(chainer.Chain):
         hz = F.softplus(hz)
         hz = self.zl2(hz)
         hz = F.softplus(hz)
-
-        h = F.sum(hx * hz, axis=1)
+        h = F.average(hx * hz, axis=1)
         return h
+
+
+class PhiLossCalculator(chainer.Chain):
+
+    def __init__(self, theta_loss_calculator, discriminator):
+        super(PhiLossCalculator, self).__init__()
+        self.theta_loss_calculator = theta_loss_calculator
+        self.discriminator = discriminator
+
+    def __call__(self, xs, zs):
+        batch_size = xs.shape[0]
+        t_loss = F.sum(self.discriminator(xs, zs)) / batch_size
+        theta_loss = self.theta_loss_calculator(xs, zs)
+        return t_loss + theta_loss
+
+
+class PsiLossCalculator(chainer.Chain):
+
+    def __init__(self, discriminator):
+        super(PsiLossCalculator, self).__init__()
+        self.discriminator = discriminator
+
+    def __call__(self, xs, encoded_zs, zs):
+        batch_size = xs.shape[0]
+        a = F.log(F.sigmoid(self.discriminator(xs, encoded_zs)))
+        b = F.log(1.0 - F.sigmoid(self.discriminator(xs, zs)))
+        c = -F.sum(a + b)
+        return c / batch_size
 
 
 if __name__ == '__main__':
@@ -107,11 +147,11 @@ if __name__ == '__main__':
             batch_size = 3
             x_dim = 4
             eps_dim = 2
-            x = chainer.Variable(np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32))
-            eps = chainer.Variable(np.arange(batch_size * eps_dim).reshape(batch_size, eps_dim).astype(np.float32))
+            xs = np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32)
+            eps = np.arange(batch_size * eps_dim).reshape(batch_size, eps_dim).astype(np.float32)
             encoder = Encoder(x_dim, eps_dim)
-            z = encoder(x, eps)
-            self.assertTrue(z.shape == (batch_size, eps_dim))
+            zs = encoder(xs, eps)
+            self.assertTrue(zs.shape == (batch_size, eps_dim))
 
     class TestDecoder(unittest.TestCase):
 
@@ -119,11 +159,25 @@ if __name__ == '__main__':
             batch_size = 3
             x_dim = 4
             z_dim = 2
-            z = chainer.Variable(np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32))
-            x = chainer.Variable(np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32))
+            zs = np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32)
             decoder = Decoder(z_dim, x_dim)
-            x = decoder(z)
-            self.assertTrue(x.shape == (batch_size, x_dim))
+            xs = decoder(zs)
+            self.assertTrue(xs.shape == (batch_size, x_dim))
+
+    class TestThetaLossCalculator(unittest.TestCase):
+
+        def test_call(self):
+            batch_size = 3
+            x_dim = 4
+            z_dim = 2
+            zs = np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32)
+            decoder = Decoder(z_dim, x_dim)
+            ps = decoder(zs)
+            self.assertTrue(ps.shape == (batch_size, x_dim))
+            xs = np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32)
+            theta_loss_calculator = ThetaLossCalculator(decoder)
+            loss = theta_loss_calculator(xs, zs)
+            self.assertTrue(loss.shape == ())
 
     class TestDiscriminator(unittest.TestCase):
 
@@ -131,10 +185,44 @@ if __name__ == '__main__':
             batch_size = 3
             x_dim = 4
             z_dim = 2
-            z = chainer.Variable(np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32))
-            x = chainer.Variable(np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32))
+            zs = np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32)
+            xs = np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32)
             discriminator = Discriminator(x_dim, z_dim)
-            r = discriminator(x, z)
-            self.assertTrue(r.shape == (batch_size,))
+            rs = discriminator(xs, zs)
+            self.assertTrue(rs.shape == (batch_size,))
+
+    class TestPhiLossCalculator(unittest.TestCase):
+
+        def test_call(self):
+            batch_size = 3
+            x_dim = 4
+            z_dim = 2
+            z = np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32)
+            decoder = Decoder(z_dim, x_dim)
+            p = decoder(z)
+            self.assertTrue(p.shape == (batch_size, x_dim))
+            xs = np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32)
+            zs = np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32)
+            theta_loss_calculator = ThetaLossCalculator(decoder)
+            discriminator = Discriminator(x_dim, z_dim)
+            phi_loss_calculator = PhiLossCalculator(theta_loss_calculator, discriminator)
+            loss = phi_loss_calculator(xs, zs)
+            self.assertTrue(loss.shape == ())
+
+    class TestPsiLossCalculator(unittest.TestCase):
+
+        def test_call(self):
+            batch_size = 3
+            x_dim = 4
+            z_dim = 2
+            zs = np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32)
+            xs = np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32)
+            discriminator = Discriminator(x_dim, z_dim)
+            rs = discriminator(xs, zs)
+            self.assertTrue(rs.shape == (batch_size,))
+
+            psi_loss_calculator = PsiLossCalculator(discriminator)
+            loss = psi_loss_calculator(xs, zs, zs)
+            self.assertTrue(loss.shape == ())
 
     unittest.main()
