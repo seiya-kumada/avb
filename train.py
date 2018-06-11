@@ -55,10 +55,11 @@ if __name__ == '__main__':
     args = parse_args()
     show_args(args)
 
-    # _/_/_/ load dataset
+    # _/_/_/ make a dataset
 
     dataset = Dataset(SAMPLE_SIZE)
     dataset.make()
+    dataset.shift()
     dataset.split(DATASET_RATIO)
     print('> dataset size:')
     print(' train.shape:\t{}'.format(dataset.train.shape))
@@ -72,7 +73,7 @@ if __name__ == '__main__':
     # _/_/_/ load model
 
     assert(x_dim == 4)
-    encoder = Encoder(x_dim, args.z_dim)
+    encoder = AlternativeEncoder(x_dim, args.z_dim)
     decoder = Decoder(args.z_dim, x_dim)
     discriminator = Discriminator(x_dim, args.z_dim)
 
@@ -99,17 +100,6 @@ if __name__ == '__main__':
         # shuffle dataset
         sampler.shuffle_xs()
 
-        # train
-
-    # _/_/_/ train
-
-    batches = n_train // args.batch_size
-
-    for epoch in range(args.epochs):
-        # shuffle dataset
-        sampler.shuffle_xs()
-
-        # train
         with chainer.using_config('train', True):
             for i in range(batches):
                 xs = sampler.sample_xs()

@@ -49,7 +49,34 @@ class Encoder(chainer.Chain):
         return h
 
 
-# This class represents a paramter of p(x|z).
+# This class is an alternative encoder.
+class AlternativeEncoder(chainer.Chain):
+
+    def __init__(self, x_dim, eps_dim, h_dim=512):
+        super(AlternativeEncoder, self).__init__()
+        with self.init_scope():
+            self.l1 = L.Linear(x_dim + eps_dim, h_dim, initialW=xavier.Xavier(x_dim + eps_dim, h_dim))
+            self.l2 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
+            self.l3 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
+            self.l4 = L.Linear(h_dim, eps_dim, initialW=xavier.Xavier(h_dim, eps_dim))
+
+    def __call__(self, x, eps):
+        h = F.concat((x, eps), axis=1)
+
+        h = self.l1(h)
+        h = F.relu(h)
+
+        h = self.l2(h)
+        h = F.relu(h)
+
+        h = self.l3(h)
+        h = F.relu(h)
+
+        h = self.l4(h)
+        return h
+
+
+# This class represents a parameter of p(x|z).
 # Now a paramter of the Bernoulli distribution is calculated.
 class Decoder(chainer.Chain):
 
@@ -92,19 +119,25 @@ class Discriminator(chainer.Chain):
         with self.init_scope():
             self.xl1 = L.Linear(x_dim, h_dim, initialW=xavier.Xavier(x_dim, h_dim))
             self.xl2 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
+            self.xl3 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
             self.zl1 = L.Linear(z_dim, h_dim, initialW=xavier.Xavier(z_dim, h_dim))
             self.zl2 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
+            self.zl3 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
 
-    def __call__(self, x, z):
-        hx = self.xl1(x)
-        hx = F.softplus(hx)
+    def __call__(self, xs, zs):
+        hx = self.xl1(xs)
+        hx = F.relu(hx)
         hx = self.xl2(hx)
-        hx = F.softplus(hx)
+        hx = F.relu(hx)
+        hx = self.xl3(hx)
+        hx = F.relu(hx)
 
-        hz = self.zl1(z)
-        hz = F.softplus(hz)
+        hz = self.zl1(zs)
+        hz = F.relu(hz)
         hz = self.zl2(hz)
-        hz = F.softplus(hz)
+        hz = F.relu(hz)
+        hz = self.zl3(hz)
+        hz = F.relu(hz)
         h = F.average(hx * hz, axis=1)
         return h
 
@@ -150,6 +183,18 @@ if __name__ == '__main__':
             xs = np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32)
             eps = np.arange(batch_size * eps_dim).reshape(batch_size, eps_dim).astype(np.float32)
             encoder = Encoder(x_dim, eps_dim)
+            zs = encoder(xs, eps)
+            self.assertTrue(zs.shape == (batch_size, eps_dim))
+
+    class TestAlternativeEncoder(unittest.TestCase):
+
+        def test_call(self):
+            batch_size = 3
+            x_dim = 4
+            eps_dim = 2
+            xs = np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32)
+            eps = np.arange(batch_size * eps_dim).reshape(batch_size, eps_dim).astype(np.float32)
+            encoder = AlternativeEncoder(x_dim, eps_dim)
             zs = encoder(xs, eps)
             self.assertTrue(zs.shape == (batch_size, eps_dim))
 
