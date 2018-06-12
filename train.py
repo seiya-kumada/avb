@@ -16,7 +16,7 @@ def parse_args():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--out', '-o', default='result',
                         help='Directory to output the result')
-    parser.add_argument('--epochs', '-e', default=1, type=int,
+    parser.add_argument('--epochs', '-e', default=100, type=int,
                         help='number of epochs to learn')
     parser.add_argument('--z_dim', '-z', default=2, type=int,
                         help='dimention of encoded vector')
@@ -59,7 +59,6 @@ if __name__ == '__main__':
 
     dataset = Dataset(SAMPLE_SIZE)
     dataset.make()
-    dataset.shift()
     dataset.split(DATASET_RATIO)
     print('> dataset size:')
     print(' train.shape:\t{}'.format(dataset.train.shape))
@@ -73,9 +72,9 @@ if __name__ == '__main__':
     # _/_/_/ load model
 
     assert(x_dim == 4)
-    encoder = AlternativeEncoder(x_dim, args.z_dim)
-    decoder = Decoder(args.z_dim, x_dim)
-    discriminator = Discriminator(x_dim, args.z_dim)
+    encoder = AlternativeEncoder(x_dim, args.z_dim, args.h_dim)
+    decoder = Decoder(args.z_dim, x_dim, args.h_dim)
+    discriminator = Discriminator(x_dim, args.z_dim, args.h_dim)
 
     theta_loss_calculator = ThetaLossCalculator(decoder)
     phi_loss_calculator = PhiLossCalculator(theta_loss_calculator, discriminator)
@@ -110,13 +109,14 @@ if __name__ == '__main__':
 
                 # compute theta-gradient(eq.3.7) in the source paper
                 theta_loss = theta_loss_calculator(xs, encoded_zs)
+                update(theta_loss, theta_loss_calculator, theta_optimizer)
 
                 # compute phi-gradient(eq.3.7)
                 phi_loss = phi_loss_calculator(xs, encoded_zs)
+                update(phi_loss, phi_loss_calculator, phi_optimizer)
 
                 # compute psi-gradient(eq.3.3)
                 psi_loss = psi_loss_calculator(xs, encoded_zs, zs)
-
-                update(theta_loss, theta_loss_calculator, theta_optimizer)
-                update(phi_loss, phi_loss_calculator, phi_optimizer)
                 update(psi_loss, psi_loss_calculator, psi_optimizer)
+        # see loss per epoch
+        print('epoch:{}, theta_loss:{}, phi_loss:{}, psi_loss:{}'.format(epoch, theta_loss.data, phi_loss.data, psi_loss.data))

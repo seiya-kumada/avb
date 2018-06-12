@@ -55,10 +55,10 @@ class AlternativeEncoder(chainer.Chain):
     def __init__(self, x_dim, eps_dim, h_dim=512):
         super(AlternativeEncoder, self).__init__()
         with self.init_scope():
-            self.l1 = L.Linear(x_dim + eps_dim, h_dim, initialW=xavier.Xavier(x_dim + eps_dim, h_dim))
-            self.l2 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
-            self.l3 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
-            self.l4 = L.Linear(h_dim, eps_dim, initialW=xavier.Xavier(h_dim, eps_dim))
+            self.l1 = L.Linear(x_dim + eps_dim, h_dim)  # , initialW=xavier.Xavier(x_dim + eps_dim, h_dim))
+            self.l2 = L.Linear(h_dim, h_dim)  # , initialW=xavier.Xavier(h_dim, h_dim))
+            self.l3 = L.Linear(h_dim, h_dim)  # , initialW=xavier.Xavier(h_dim, h_dim))
+            self.l4 = L.Linear(h_dim, eps_dim)  # , initialW=xavier.Xavier(h_dim, eps_dim))
 
     def __call__(self, x, eps):
         h = F.concat((x, eps), axis=1)
@@ -83,18 +83,22 @@ class Decoder(chainer.Chain):
     def __init__(self, z_dim, x_dim=1, h_dim=512):
         super(Decoder, self).__init__()
         with self.init_scope():
-            self.l1 = L.Linear(z_dim, h_dim, initialW=xavier.Xavier(z_dim, h_dim))
-            self.l2 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
-            self.l3 = L.Linear(h_dim, x_dim, initialW=xavier.Xavier(h_dim, x_dim))
+            self.l1 = L.Linear(z_dim, h_dim)  # , initialW=xavier.Xavier(z_dim, h_dim))
+            self.l2 = L.Linear(h_dim, h_dim)  # , initialW=xavier.Xavier(h_dim, h_dim))
+            self.l3 = L.Linear(h_dim, h_dim)  # , initialW=xavier.Xavier(h_dim, h_dim))
+            self.l4 = L.Linear(h_dim, x_dim)  # , initialW=xavier.Xavier(h_dim, x_dim))
 
     def __call__(self, z):
         h = self.l1(z)
-        h = F.softplus(h)
+        h = F.relu(h)
 
         h = self.l2(h)
-        h = F.softplus(h)
+        h = F.relu(h)
 
         h = self.l3(h)
+        h = F.relu(h)
+
+        h = self.l4(h)
         return h
 
 
@@ -102,7 +106,8 @@ class ThetaLossCalculator(chainer.Chain):
 
     def __init__(self, decoder):
         super(ThetaLossCalculator, self).__init__()
-        self.decoder = decoder
+        with self.init_scope():
+            self.decoder = decoder
 
     def __call__(self, x, z):
         batch_size = x.shape[0]
@@ -117,14 +122,15 @@ class Discriminator(chainer.Chain):
     def __init__(self, x_dim, z_dim, h_dim=512):
         super(Discriminator, self).__init__()
         with self.init_scope():
-            self.xl1 = L.Linear(x_dim, h_dim, initialW=xavier.Xavier(x_dim, h_dim))
-            self.xl2 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
-            self.xl3 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
-            self.zl1 = L.Linear(z_dim, h_dim, initialW=xavier.Xavier(z_dim, h_dim))
-            self.zl2 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
-            self.zl3 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
+            self.xl1 = L.Linear(x_dim, h_dim)  # , initialW=xavier.Xavier(x_dim, h_dim))
+            self.xl2 = L.Linear(h_dim, h_dim)  # , initialW=xavier.Xavier(h_dim, h_dim))
+            self.xl3 = L.Linear(h_dim, h_dim)  # , initialW=xavier.Xavier(h_dim, h_dim))
+            self.zl1 = L.Linear(z_dim, h_dim)  # , initialW=xavier.Xavier(z_dim, h_dim))
+            self.zl2 = L.Linear(h_dim, h_dim)  # , initialW=xavier.Xavier(h_dim, h_dim))
+            self.zl3 = L.Linear(h_dim, h_dim)  # , initialW=xavier.Xavier(h_dim, h_dim))
 
     def __call__(self, xs, zs):
+        xs = 2 * xs - 1
         hx = self.xl1(xs)
         hx = F.relu(hx)
         hx = self.xl2(hx)
@@ -138,7 +144,7 @@ class Discriminator(chainer.Chain):
         hz = F.relu(hz)
         hz = self.zl3(hz)
         hz = F.relu(hz)
-        h = F.average(hx * hz, axis=1)
+        h = F.sum(hx * hz, axis=1)
         return h
 
 
@@ -146,8 +152,9 @@ class PhiLossCalculator(chainer.Chain):
 
     def __init__(self, theta_loss_calculator, discriminator):
         super(PhiLossCalculator, self).__init__()
-        self.theta_loss_calculator = theta_loss_calculator
-        self.discriminator = discriminator
+        with self.init_scope():
+            self.theta_loss_calculator = theta_loss_calculator
+            self.discriminator = discriminator
 
     def __call__(self, xs, zs):
         batch_size = xs.shape[0]
@@ -160,7 +167,8 @@ class PsiLossCalculator(chainer.Chain):
 
     def __init__(self, discriminator):
         super(PsiLossCalculator, self).__init__()
-        self.discriminator = discriminator
+        with self.init_scope():
+            self.discriminator = discriminator
 
     def __call__(self, xs, encoded_zs, zs):
         batch_size = xs.shape[0]
@@ -235,6 +243,16 @@ if __name__ == '__main__':
             discriminator = Discriminator(x_dim, z_dim)
             rs = discriminator(xs, zs)
             self.assertTrue(rs.shape == (batch_size,))
+
+        def test_average(self):
+            x = np.array([[1, 2], [2, 1]]).astype(np.float32)
+            y = np.array([[3, 4], [4, 3]]).astype(np.float32)
+            print(x)
+            print(y)
+            z = x * y
+            print(z)
+            w = F.average(F.sum(z, axis=1))
+            print(w.data)
 
     class TestPhiLossCalculator(unittest.TestCase):
 
