@@ -76,9 +76,9 @@ if __name__ == '__main__':
     decoder = Decoder(args.z_dim, x_dim, args.h_dim)
     discriminator = Discriminator(x_dim, args.z_dim, args.h_dim)
 
-    theta_loss_calculator = ThetaLossCalculator(decoder)
-    phi_loss_calculator = PhiLossCalculator(theta_loss_calculator, discriminator)
-    psi_loss_calculator = PsiLossCalculator(discriminator)
+    theta_loss_calculator = ThetaLossCalculator_(encoder, decoder)
+    phi_loss_calculator = PhiLossCalculator_(encoder, decoder, discriminator)
+    psi_loss_calculator = PsiLossCalculator_(encoder, discriminator)
 
     # _/_/_/ make optimizers
 
@@ -105,18 +105,32 @@ if __name__ == '__main__':
                 zs = sampler.sample_gaussian(0, 1)
                 es = sampler.sample_gaussian(0, 1)
 
-                encoded_zs = encoder(xs, es)
-
                 # compute theta-gradient(eq.3.7) in the source paper
-                theta_loss = theta_loss_calculator(xs, encoded_zs)
-                update(theta_loss, theta_loss_calculator, theta_optimizer)
+                encoder.update(False)
+                decoder.update(True)
+                discriminator.update(False)
+                theta_loss = theta_loss_calculator(xs, zs, es)
+                theta_loss_calculator.cleargrads()
+                theta_loss.backward()
+                theta_optimizer.update()
 
                 # compute phi-gradient(eq.3.7)
-                phi_loss = phi_loss_calculator(xs, encoded_zs)
-                update(phi_loss, phi_loss_calculator, phi_optimizer)
+                encoder.update(True)
+                decoder.update(False)
+                discriminator.update(False)
+                phi_loss = phi_loss_calculator(xs, zs, es)
+                phi_loss_calculator.cleargrads()
+                phi_loss.backward()
+                phi_optimizer.update()
 
                 # compute psi-gradient(eq.3.3)
-                psi_loss = psi_loss_calculator(xs, encoded_zs, zs)
-                update(psi_loss, psi_loss_calculator, psi_optimizer)
+                encoder.update(False)
+                decoder.update(False)
+                discriminator.update(True)
+                psi_loss = psi_loss_calculator(xs, zs, es)
+                psi_loss_calculator.cleargrads()
+                psi_loss.backward()
+                psi_optimizer.update()
+
         # see loss per epoch
         print('epoch:{}, theta_loss:{}, phi_loss:{}, psi_loss:{}'.format(epoch, theta_loss.data, phi_loss.data, psi_loss.data))
