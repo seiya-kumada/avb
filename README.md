@@ -13,4 +13,7 @@ Encoder takes 'x' and 'eps' as inputs.
 After 'eps' is transformed by the linear transformation, it is added to x.
 An altenative method to merge 'x' and 'eps' is to concatenate them.
 
-
+# GradientClipping
+What is a gradient clipping?
+http://isw3.naist.jp/~neubig/student/2015/seitaro-s/161025neuralnet_study_LSTM.pdf
+http://proceedings.mlr.press/v28/pascanu13.pdf

@@ -4,7 +4,7 @@ import xavier
 import chainer
 import chainer.links as L
 import chainer.functions as F
-
+import numpy as np
 # what does 'reuse' in tensorflow mean?
 # https://qiita.com/halhorn/items/6805b1fd3f8ff74840df
 
@@ -75,17 +75,17 @@ class AlternativeEncoder(chainer.Chain):
     def update(self, updates):
         update_links(self, updates)
 
-    def __call__(self, x, eps):
+    def __call__(self, x, eps, action=F.relu):
         h = F.concat((x, eps), axis=1)
 
         h = self.l1(h)
-        h = F.relu(h)
+        h = action(h)
 
         h = self.l2(h)
-        h = F.relu(h)
+        h = action(h)
 
         h = self.l3(h)
-        h = F.relu(h)
+        h = action(h)
 
         h = self.l4(h)
         return h
@@ -106,17 +106,18 @@ class Decoder(chainer.Chain):
     def update(self, updates):
         update_links(self, updates)
 
-    def __call__(self, z):
+    def __call__(self, z, action=F.tanh):
         h = self.l1(z)
-        h = F.relu(h)
+        h = action(h)
 
         h = self.l2(h)
-        h = F.relu(h)
+        h = action(h)
 
         h = self.l3(h)
-        h = F.relu(h)
+        h = action(h)
 
         h = self.l4(h)
+        # h = F.sigmoid(h)
         return h
 
 
@@ -167,21 +168,21 @@ class Discriminator(chainer.Chain):
     def update(self, updates):
         update_links(self, updates)
 
-    def __call__(self, xs, zs):
+    def __call__(self, xs, zs, action=F.relu):
         xs = 2 * xs - 1
         hx = self.xl1(xs)
-        hx = F.relu(hx)
+        hx = action(hx)
         hx = self.xl2(hx)
-        hx = F.relu(hx)
+        hx = action(hx)
         hx = self.xl3(hx)
-        hx = F.relu(hx)
+        hx = action(hx)
 
         hz = self.zl1(zs)
-        hz = F.relu(hz)
+        hz = action(hz)
         hz = self.zl2(hz)
-        hz = F.relu(hz)
+        hz = action(hz)
         hz = self.zl3(hz)
-        hz = F.relu(hz)
+        hz = action(hz)
         h = F.sum(hx * hz, axis=1) / self.h_dim
         return h
 
@@ -253,7 +254,7 @@ class PsiLossCalculator_(chainer.Chain):
 
 if __name__ == '__main__':
     import unittest
-    import numpy as np
+    # import numpy as np
 
     class TestEncoder(unittest.TestCase):
 
