@@ -6,9 +6,9 @@ from dataset import *  # noqa
 from sampler import *  # noqa
 from net import *  # noqa
 from chainer import optimizers
-
-DATASET_RATIO = 0.9
-SAMPLE_SIZE = 1000
+from constants import *  # noqa
+# DATASET_RATIO = 0.9
+# SAMPLE_SIZE = 1000
 
 
 def parse_args():
@@ -172,6 +172,11 @@ if __name__ == '__main__':
             epoch_theta_losses.append(epoch_theta_loss.data)
             epoch_phi_losses.append(epoch_phi_loss.data)
             epoch_psi_losses.append(epoch_psi_loss.data)
+
         np.save(os.path.join(args.out, 'epoch_theta_losses.npy'), np.array(epoch_theta_losses))
         np.save(os.path.join(args.out, 'epoch_phi_losses.npy'), np.array(epoch_phi_losses))
         np.save(os.path.join(args.out, 'epoch_psi_losses.npy'), np.array(epoch_psi_losses))
+
+        chainer.serializers.save_npz(os.path.join(args.out, 'encoder.npz'), encoder, compression=True)
+        chainer.serializers.save_npz(os.path.join(args.out, 'decoder.npz'), decoder, compression=True)
+        chainer.serializers.save_npz(os.path.join(args.out, 'discriminator.npz'), discriminator, compression=True)

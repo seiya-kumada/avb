@@ -106,7 +106,7 @@ class Decoder(chainer.Chain):
     def update(self, updates):
         update_links(self, updates)
 
-    def __call__(self, z, action=F.tanh):
+    def __call__(self, z, action=F.tanh, is_sigmoid=False):
         h = self.l1(z)
         h = action(h)
 
@@ -117,7 +117,8 @@ class Decoder(chainer.Chain):
         h = action(h)
 
         h = self.l4(h)
-        # h = F.sigmoid(h)
+        if is_sigmoid:
+            h = F.sigmoid(h)
         return h
 
 
