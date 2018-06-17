@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     # load a model
     x_dim = 4
-    encoder = net.AlternativeEncoder(x_dim, args.z_dim, args.h_dim)
+    encoder = net.Encoder(x_dim, args.z_dim, args.h_dim)
     encoder_path = os.path.join(args.in_dir, 'encoder.npz')
     chainer.serializers.load_npz(encoder_path, encoder, strict=True)
 

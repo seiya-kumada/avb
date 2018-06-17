@@ -47,16 +47,16 @@ class Encoder(chainer.Chain):
         h = self.a3(eps)
         return h + x
 
-    def __call__(self, x, eps):
-        h = self.merge_1(x, eps)
+    def __call__(self, xs, es):
+        h = self.merge_1(xs, es)
         h = self.l1(h)
         h = F.softplus(h)
 
-        h = self.merge_2(h, eps)
+        h = self.merge_2(h, es)
         h = self.l2(h)
         h = F.softplus(h)
 
-        h = self.merge_3(h, eps)
+        h = self.merge_3(h, es)
         h = self.l3(h)
         return h
 
@@ -75,8 +75,9 @@ class AlternativeEncoder(chainer.Chain):
     def update(self, updates):
         update_links(self, updates)
 
-    def __call__(self, x, eps, action=F.relu):
-        h = F.concat((x, eps), axis=1)
+    def __call__(self, xs, es, action=F.relu):
+        xs = 2 * xs - 1
+        h = F.concat((xs, es), axis=1)
 
         h = self.l1(h)
         h = action(h)
@@ -106,8 +107,8 @@ class Decoder(chainer.Chain):
     def update(self, updates):
         update_links(self, updates)
 
-    def __call__(self, z, action=F.tanh, is_sigmoid=False):
-        h = self.l1(z)
+    def __call__(self, zs, action=F.tanh, is_sigmoid=False):
+        h = self.l1(zs)
         h = action(h)
 
         h = self.l2(h)
