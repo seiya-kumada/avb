@@ -14,6 +14,9 @@ class Sampler(object):
         self.xs_size, _ = dataset.shape
         self.indices = np.arange(self.xs_size)
 
+        # self.es = np.random.normal(0, 1, (self.xs_size, self.z_dim)).astype(np.float32)
+        # self.zs = np.random.normal(0, 1, (self.xs_size, self.z_dim)).astype(np.float32)
+
     # test ok
     def shuffle_xs(self):
         np.random.shuffle(self.indices)
@@ -28,6 +31,16 @@ class Sampler(object):
     def sample_gaussian(self, mean, sigma):
         return np.random.normal(mean, sigma, (self.batch_size, self.z_dim)).astype(np.float32)
 
+    # def sample_zs(self):
+    #     vs = self.zs[self.indices[:self.batch_size]]
+    #     # roll is not needed because it's done in sample_xs.
+    #     return vs
+
+    # def sample_es(self):
+    #     vs = self.es[self.indices[:self.batch_size]]
+    #     # roll is not needed because it's done in sample_xs.
+    #     return vs
+
 
 if __name__ == '__main__':
     import unittest
@@ -35,6 +48,21 @@ if __name__ == '__main__':
     import collections
 
     class TestSampler(unittest.TestCase):
+
+        # def test_sample_es_zs(self):
+        #     sample_size = 50
+        #     pixel_size = 4
+        #     ratio = 0.9
+        #     batch_size = 10
+        #     dataset = Dataset(sample_size, pixel_size)
+        #     dataset.make()
+        #     dataset.split(ratio=ratio)
+        #     self.assertTrue((int(sample_size * ratio), pixel_size) == dataset.train.shape)
+        #     sampler = Sampler(dataset.train, z_dim=4, batch_size=batch_size)
+        #     zs = sampler.sample_zs()
+        #     print(zs)
+        #     es = sampler.sample_es()
+        #     print(es)
 
         def test_init(self):
             sample_size = 50
@@ -50,6 +78,8 @@ if __name__ == '__main__':
             self.assertTrue(sampler.batch_size == batch_size)
             self.assertTrue(sampler.xs_size == 45)
             self.assertTrue(np.all(sampler.indices == np.arange(45)))
+            self.assertTrue(sampler.es.shape == (45, 4))
+            self.assertTrue(sampler.zs.shape == (45, 4))
 
         def test_shuffle(self):
             sample_size = 100

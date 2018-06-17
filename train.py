@@ -98,7 +98,7 @@ if __name__ == '__main__':
     # _/_/_/ load model
 
     assert(x_dim == 4)
-    encoder = Encoder(x_dim, args.z_dim, args.h_dim)
+    encoder = AlternativeEncoder(x_dim, args.z_dim, args.h_dim)
     decoder = Decoder(args.z_dim, x_dim, args.h_dim)
     discriminator = Discriminator(x_dim, args.z_dim, args.h_dim)
 

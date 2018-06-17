@@ -7,7 +7,7 @@ import chainer
 import numpy as np
 from constants import *  # noqa
 
-SAMPLE_SIZE = 5000
+SAMPLE_SIZE = 10000
 
 
 def parse_args():
@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     # load a model
     x_dim = 4
-    encoder = net.Encoder(x_dim, args.z_dim, args.h_dim)
+    encoder = net.AlternativeEncoder(x_dim, args.z_dim, args.h_dim)
     encoder_path = os.path.join(args.in_dir, 'encoder.npz')
     chainer.serializers.load_npz(encoder_path, encoder, strict=True)
 
