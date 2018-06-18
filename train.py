@@ -15,7 +15,7 @@ def parse_args():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--out', '-o', default='result',
                         help='Directory to output the result')
-    parser.add_argument('--epochs', '-e', default=30, type=int,
+    parser.add_argument('--epochs', '-e', default=50, type=int,
                         help='number of epochs to learn')
     parser.add_argument('--z_dim', '-z', default=2, type=int,
                         help='dimention of encoded vector')
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     # _/_/_/ load model
 
     assert(x_dim == 4)
-    encoder = Encoder(x_dim, args.z_dim, args.h_dim)
+    encoder = AlternativeEncoder_(x_dim, args.z_dim, args.h_dim)
     decoder = Decoder(args.z_dim, x_dim, args.h_dim)
     discriminator = Discriminator(x_dim, args.z_dim, args.h_dim)
 

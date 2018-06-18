@@ -93,6 +93,41 @@ class AlternativeEncoder(chainer.Chain):
         return h
 
 
+class AlternativeEncoder_(chainer.Chain):
+
+    def __init__(self, x_dim, eps_dim, h_dim=512):
+        super(AlternativeEncoder_, self).__init__()
+        with self.init_scope():
+            self.l1 = L.Linear(x_dim, h_dim, initialW=xavier.Xavier(x_dim + eps_dim, h_dim))
+            self.l2 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
+            self.l3 = L.Linear(h_dim, h_dim, initialW=xavier.Xavier(h_dim, h_dim))
+            self.l4 = L.Linear(h_dim, eps_dim, initialW=xavier.Xavier(h_dim, eps_dim))
+            self.a1 = L.Linear(eps_dim, x_dim, initialW=xavier.Xavier(eps_dim, x_dim))
+
+    def merge_1(self, x, eps):
+        h = self.a1(eps)
+        return h + x
+
+    def update(self, updates):
+        update_links(self, updates)
+
+    def __call__(self, xs, es, activation=F.relu):
+        xs = 2 * xs - 1
+        h = self.merge_1(xs, es)
+
+        h = self.l1(h)
+        h = activation(h)
+
+        h = self.l2(h)
+        h = activation(h)
+
+        h = self.l3(h)
+        h = activation(h)
+
+        h = self.l4(h)
+        return h
+
+
 # This class represents a parameter of p(x|z).
 # Now a paramter of the Bernoulli distribution is calculated.
 class Decoder(chainer.Chain):
