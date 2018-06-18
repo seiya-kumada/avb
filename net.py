@@ -47,15 +47,15 @@ class Encoder(chainer.Chain):
         h = self.a3(eps)
         return h + x
 
-    def __call__(self, xs, es):
+    def __call__(self, xs, es, activation=F.softplus):
         xs = 2 * xs - 1
         h = self.merge_1(xs, es)
         h = self.l1(h)
-        h = F.softplus(h)
+        h = activation(h)
 
         h = self.merge_2(h, es)
         h = self.l2(h)
-        h = F.softplus(h)
+        h = activation(h)
 
         h = self.merge_3(h, es)
         h = self.l3(h)
@@ -76,18 +76,18 @@ class AlternativeEncoder(chainer.Chain):
     def update(self, updates):
         update_links(self, updates)
 
-    def __call__(self, xs, es, action=F.relu):
+    def __call__(self, xs, es, activation=F.relu):
         xs = 2 * xs - 1
         h = F.concat((xs, es), axis=1)
 
         h = self.l1(h)
-        h = action(h)
+        h = activation(h)
 
         h = self.l2(h)
-        h = action(h)
+        h = activation(h)
 
         h = self.l3(h)
-        h = action(h)
+        h = activation(h)
 
         h = self.l4(h)
         return h
@@ -108,15 +108,15 @@ class Decoder(chainer.Chain):
     def update(self, updates):
         update_links(self, updates)
 
-    def __call__(self, zs, action=F.tanh, is_sigmoid=False):
+    def __call__(self, zs, activation=F.tanh, is_sigmoid=False):
         h = self.l1(zs)
-        h = action(h)
+        h = activation(h)
 
         h = self.l2(h)
-        h = action(h)
+        h = activation(h)
 
         h = self.l3(h)
-        h = action(h)
+        h = activation(h)
 
         h = self.l4(h)
         if is_sigmoid:
@@ -171,21 +171,21 @@ class Discriminator(chainer.Chain):
     def update(self, updates):
         update_links(self, updates)
 
-    def __call__(self, xs, zs, action=F.relu):
+    def __call__(self, xs, zs, activation=F.relu):
         xs = 2 * xs - 1
         hx = self.xl1(xs)
-        hx = action(hx)
+        hx = activation(hx)
         hx = self.xl2(hx)
-        hx = action(hx)
+        hx = activation(hx)
         hx = self.xl3(hx)
-        hx = action(hx)
+        hx = activation(hx)
 
         hz = self.zl1(zs)
-        hz = action(hz)
+        hz = activation(hz)
         hz = self.zl2(hz)
-        hz = action(hz)
+        hz = activation(hz)
         hz = self.zl3(hz)
-        hz = action(hz)
+        hz = activation(hz)
         h = F.sum(hx * hz, axis=1) / self.h_dim
         return h
 
