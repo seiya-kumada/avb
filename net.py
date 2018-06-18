@@ -48,6 +48,7 @@ class Encoder(chainer.Chain):
         return h + x
 
     def __call__(self, xs, es):
+        xs = 2 * xs - 1
         h = self.merge_1(xs, es)
         h = self.l1(h)
         h = F.softplus(h)

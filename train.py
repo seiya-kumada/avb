@@ -7,8 +7,6 @@ from sampler import *  # noqa
 from net import *  # noqa
 from chainer import optimizers
 from constants import *  # noqa
-# DATASET_RATIO = 0.9
-# SAMPLE_SIZE = 1000
 
 
 def parse_args():
@@ -17,7 +15,7 @@ def parse_args():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--out', '-o', default='result',
                         help='Directory to output the result')
-    parser.add_argument('--epochs', '-e', default=30, type=int,
+    parser.add_argument('--epochs', '-e', default=50, type=int,
                         help='number of epochs to learn')
     parser.add_argument('--z_dim', '-z', default=2, type=int,
                         help='dimention of encoded vector')
@@ -98,7 +96,7 @@ if __name__ == '__main__':
     # _/_/_/ load model
 
     assert(x_dim == 4)
-    encoder = AlternativeEncoder(x_dim, args.z_dim, args.h_dim)
+    encoder = Encoder(x_dim, args.z_dim, args.h_dim)
     decoder = Decoder(args.z_dim, x_dim, args.h_dim)
     discriminator = Discriminator(x_dim, args.z_dim, args.h_dim)
 
@@ -142,6 +140,11 @@ if __name__ == '__main__':
                 zs = sampler.sample_gaussian(0, 1)
                 es = sampler.sample_gaussian(0, 1)
 
+                # compute psi-gradient(eq.3.3)
+                update_switch.update_models(enc_updates=False, dec_updates=False, dis_updates=True)
+                psi_loss = psi_loss_calculator(xs, zs, es)
+                update(psi_loss, psi_loss_calculator, psi_optimizer)
+
                 # compute theta-gradient(eq.3.7) in the source paper
                 update_switch.update_models(enc_updates=False, dec_updates=True, dis_updates=False)
                 theta_loss = theta_loss_calculator(xs, zs, es)
@@ -151,11 +154,6 @@ if __name__ == '__main__':
                 update_switch.update_models(enc_updates=True, dec_updates=False, dis_updates=False)
                 phi_loss = phi_loss_calculator(xs, zs, es)
                 update(phi_loss, phi_loss_calculator, phi_optimizer)
-
-                # compute psi-gradient(eq.3.3)
-                update_switch.update_models(enc_updates=False, dec_updates=False, dis_updates=True)
-                psi_loss = psi_loss_calculator(xs, zs, es)
-                update(psi_loss, psi_loss_calculator, psi_optimizer)
 
                 epoch_theta_loss += theta_loss
                 epoch_phi_loss += phi_loss
