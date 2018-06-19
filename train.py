@@ -96,7 +96,7 @@ if __name__ == '__main__':
     # _/_/_/ load model
 
     assert(x_dim == 4)
-    encoder = AlternativeEncoder_(x_dim, args.z_dim, args.h_dim)
+    encoder = AlternativeEncoder(x_dim, args.z_dim, args.h_dim)
     decoder = Decoder(args.z_dim, x_dim, args.h_dim)
     discriminator = Discriminator(x_dim, args.z_dim, args.h_dim)
 
@@ -137,8 +137,8 @@ if __name__ == '__main__':
 
             for i in range(batches):
                 xs = sampler.sample_xs()
-                zs = sampler.sample_gaussian(0, 1)
-                es = sampler.sample_gaussian(0, 1)
+                zs = sampler.sample_zs()
+                es = sampler.sample_es()
 
                 # compute psi-gradient(eq.3.3)
                 update_switch.update_models(enc_updates=False, dec_updates=False, dis_updates=True)

@@ -286,6 +286,13 @@ class PsiLossCalculator_(chainer.Chain):
         encoded_zs = self.encoder(xs, es)
         a = F.log(F.sigmoid(self.discriminator(xs, encoded_zs)))
         b = F.log(1.0 - F.sigmoid(self.discriminator(xs, zs)))
+
+        # print('xs:{}'.format(xs))
+        # print('encoded_zs:{}'.format(encoded_zs))
+        # print('zs:{}'.format(zs))
+        # print('t_post:{}'.format(self.discriminator(xs, encoded_zs)))
+        # print('t_prior:{}'.format(self.discriminator(xs, zs)))
+
         c = -F.sum(a + b)
         return c / batch_size
 

@@ -14,8 +14,8 @@ class Sampler(object):
         self.xs_size, _ = dataset.shape
         self.indices = np.arange(self.xs_size)
 
-        # self.es = np.random.normal(0, 1, (self.xs_size, self.z_dim)).astype(np.float32)
-        # self.zs = np.random.normal(0, 1, (self.xs_size, self.z_dim)).astype(np.float32)
+        self.es = np.random.normal(0, 1, (self.xs_size, self.z_dim)).astype(np.float32)
+        self.zs = np.random.normal(0, 1, (self.xs_size, self.z_dim)).astype(np.float32)
 
     # test ok
     def shuffle_xs(self):
@@ -31,15 +31,15 @@ class Sampler(object):
     def sample_gaussian(self, mean, sigma):
         return np.random.normal(mean, sigma, (self.batch_size, self.z_dim)).astype(np.float32)
 
-    # def sample_zs(self):
-    #     vs = self.zs[self.indices[:self.batch_size]]
-    #     # roll is not needed because it's done in sample_xs.
-    #     return vs
+    def sample_zs(self):
+        vs = self.zs[self.indices[:self.batch_size]]
+        # roll is not needed because it's done in sample_xs.
+        return vs
 
-    # def sample_es(self):
-    #     vs = self.es[self.indices[:self.batch_size]]
-    #     # roll is not needed because it's done in sample_xs.
-    #     return vs
+    def sample_es(self):
+        vs = self.es[self.indices[:self.batch_size]]
+        # roll is not needed because it's done in sample_xs.
+        return vs
 
 
 if __name__ == '__main__':
