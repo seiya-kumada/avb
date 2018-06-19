@@ -49,20 +49,20 @@ if __name__ == '__main__':
 
     class TestSampler(unittest.TestCase):
 
-        # def test_sample_es_zs(self):
-        #     sample_size = 50
-        #     pixel_size = 4
-        #     ratio = 0.9
-        #     batch_size = 10
-        #     dataset = Dataset(sample_size, pixel_size)
-        #     dataset.make()
-        #     dataset.split(ratio=ratio)
-        #     self.assertTrue((int(sample_size * ratio), pixel_size) == dataset.train.shape)
-        #     sampler = Sampler(dataset.train, z_dim=4, batch_size=batch_size)
-        #     zs = sampler.sample_zs()
-        #     print(zs)
-        #     es = sampler.sample_es()
-        #     print(es)
+        def test_sample_es_zs(self):
+            sample_size = 50
+            pixel_size = 4
+            ratio = 0.9
+            batch_size = 10
+            dataset = Dataset(sample_size, pixel_size)
+            dataset.make()
+            dataset.split(ratio=ratio)
+            self.assertTrue((int(sample_size * ratio), pixel_size) == dataset.train.shape)
+            sampler = Sampler(dataset.train, z_dim=4, batch_size=batch_size)
+            zs = sampler.sample_zs()
+            self.assertTrue((batch_size, pixel_size) == zs.shape)
+            es = sampler.sample_es()
+            self.assertTrue((batch_size, pixel_size) == es.shape)
 
         def test_init(self):
             sample_size = 50

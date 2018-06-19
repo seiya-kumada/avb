@@ -15,13 +15,13 @@ def parse_args():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--out', '-o', default='result',
                         help='Directory to output the result')
-    parser.add_argument('--epochs', '-e', default=50, type=int,
+    parser.add_argument('--epochs', '-e', default=100, type=int,
                         help='number of epochs to learn')
     parser.add_argument('--z_dim', '-z', default=2, type=int,
                         help='dimention of encoded vector')
-    parser.add_argument('--h_dim', '-hd', default=512, type=int,
+    parser.add_argument('--h_dim', '-hd', default=300, type=int,
                         help='dimention of hidden layer')
-    parser.add_argument('--batch_size', '-b', default=10, type=int,
+    parser.add_argument('--batch_size', '-b', default=500, type=int,
                         help='learning minibatch size')
     args = parser.parse_args()
     return args
@@ -96,20 +96,16 @@ if __name__ == '__main__':
     # _/_/_/ load model
 
     assert(x_dim == 4)
-    encoder = AlternativeEncoder(x_dim, args.z_dim, args.h_dim)
+    encoder = Encoder(x_dim, args.z_dim, args.h_dim)
     decoder = Decoder(args.z_dim, x_dim, args.h_dim)
     discriminator = Discriminator(x_dim, args.z_dim, args.h_dim)
 
     update_switch = UpdateSwitch(encoder, decoder, discriminator)
 
-    theta_loss_calculator = ThetaLossCalculator_(encoder, decoder)
     phi_loss_calculator = PhiLossCalculator_(encoder, decoder, discriminator)
-    psi_loss_calculator = PsiLossCalculator_(encoder, discriminator)
+    psi_loss_calculator = PsiLossCalculator__(encoder, discriminator)
 
     # _/_/_/ make optimizers
-
-    theta_optimizer = optimizers.Adam()
-    setup_optimizer(theta_optimizer, theta_loss_calculator)
 
     phi_optimizer = optimizers.Adam()
     setup_optimizer(phi_optimizer, phi_loss_calculator)
@@ -123,7 +119,6 @@ if __name__ == '__main__':
         os.mkdir(args.out)
 
     batches = n_train // args.batch_size
-    epoch_theta_losses = []
     epoch_phi_losses = []
     epoch_psi_losses = []
     with chainer.using_config('train', True):
@@ -131,7 +126,6 @@ if __name__ == '__main__':
             # shuffle dataset
             sampler.shuffle_xs()
 
-            epoch_theta_loss = 0
             epoch_phi_loss = 0
             epoch_psi_loss = 0
 
@@ -144,34 +138,23 @@ if __name__ == '__main__':
                 update_switch.update_models(enc_updates=False, dec_updates=False, dis_updates=True)
                 psi_loss = psi_loss_calculator(xs, zs, es)
                 update(psi_loss, psi_loss_calculator, psi_optimizer)
-
-                # compute theta-gradient(eq.3.7) in the source paper
-                # update_switch.update_models(enc_updates=False, dec_updates=True, dis_updates=False)
-                # theta_loss = theta_loss_calculator(xs, zs, es)
-                # update(theta_loss, theta_loss_calculator, theta_optimizer)
+                epoch_psi_loss += psi_loss
 
                 # compute phi-gradient(eq.3.7)
                 update_switch.update_models(enc_updates=True, dec_updates=True, dis_updates=False)
                 phi_loss = phi_loss_calculator(xs, zs, es)
                 update(phi_loss, phi_loss_calculator, phi_optimizer)
-
-                # epoch_theta_loss += theta_loss
                 epoch_phi_loss += phi_loss
-                epoch_psi_loss += psi_loss
 
             # see loss per epoch
-            # epoch_theta_loss /= batches
             epoch_phi_loss /= batches
             epoch_psi_loss /= batches
-            print('epoch:{}, theta_loss:{}, phi_loss:{}, psi_loss:{}'.format(epoch,
-                                                                             0,
-                                                                             epoch_phi_loss.data,
-                                                                             epoch_psi_loss.data))
-            # epoch_theta_losses.append(epoch_theta_loss.data)
+            print('epoch:{}, phi_loss:{}, psi_loss:{}'.format(epoch,
+                                                              epoch_phi_loss.data,
+                                                              epoch_psi_loss.data))
             epoch_phi_losses.append(epoch_phi_loss.data)
             epoch_psi_losses.append(epoch_psi_loss.data)
 
-        # np.save(os.path.join(args.out, 'epoch_theta_losses.npy'), np.array(epoch_theta_losses))
         np.save(os.path.join(args.out, 'epoch_phi_losses.npy'), np.array(epoch_phi_losses))
         np.save(os.path.join(args.out, 'epoch_psi_losses.npy'), np.array(epoch_psi_losses))
 

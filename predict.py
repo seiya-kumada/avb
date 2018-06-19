@@ -16,7 +16,7 @@ def parse_args():
                         help='Directory to the trained model')
     parser.add_argument('--z_dim', '-z', default=2, type=int,
                         help='dimention of encoded vector')
-    parser.add_argument('--h_dim', '-hd', default=512, type=int,
+    parser.add_argument('--h_dim', '-hd', default=300, type=int,
                         help='dimention of hidden layer')
     args = parser.parse_args()
     return args
@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     # load a model
     x_dim = 4
-    encoder = net.AlternativeEncoder(x_dim, args.z_dim, args.h_dim)
+    encoder = net.Encoder(x_dim, args.z_dim, args.h_dim)
     encoder_path = os.path.join(args.in_dir, 'encoder.npz')
     chainer.serializers.load_npz(encoder_path, encoder, strict=True)
 

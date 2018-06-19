@@ -7,6 +7,7 @@ import chainer.functions as F
 import numpy as np
 # what does 'reuse' in tensorflow mean?
 # https://qiita.com/halhorn/items/6805b1fd3f8ff74840df
+# https://gist.github.com/poolio/b71eb943d6537d01f46e7b20e9225149
 
 
 def update_links(net, updates):
@@ -286,14 +287,26 @@ class PsiLossCalculator_(chainer.Chain):
         encoded_zs = self.encoder(xs, es)
         a = F.log(F.sigmoid(self.discriminator(xs, encoded_zs)))
         b = F.log(1.0 - F.sigmoid(self.discriminator(xs, zs)))
-
-        # print('xs:{}'.format(xs))
-        # print('encoded_zs:{}'.format(encoded_zs))
-        # print('zs:{}'.format(zs))
-        # print('t_post:{}'.format(self.discriminator(xs, encoded_zs)))
-        # print('t_prior:{}'.format(self.discriminator(xs, zs)))
-
         c = -F.sum(a + b)
+        return c / batch_size
+
+
+class PsiLossCalculator__(chainer.Chain):
+
+    def __init__(self, encoder, discriminator):
+        super().__init__()
+        with self.init_scope():
+            self.encoder = encoder
+            self.discriminator = discriminator
+
+    def __call__(self, xs, zs, es):
+        batch_size = xs.shape[0]
+        encoded_zs = self.encoder(xs, es)
+        posterior = self.discriminator(xs, encoded_zs)
+        prior = self.discriminator(xs, zs)
+        a = F.sigmoid_cross_entropy(posterior, np.ones_like(posterior).astype(np.int32))
+        b = F.sigmoid_cross_entropy(prior, np.zeros_like(prior).astype(np.int32))
+        c = F.sum(a + b)
         return c / batch_size
 
 
