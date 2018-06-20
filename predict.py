@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 import argparse
 import os
-import net
 import chainer
 import numpy as np
+from dataset import *  # noqa
+from encoder import *  # noqa
+from decoder import *  # noqa
 from constants import *  # noqa
 
 SAMPLE_SIZE = 10000
@@ -33,38 +35,50 @@ if __name__ == '__main__':
 
     # load a model
     x_dim = 4
-    encoder = net.Encoder(x_dim, args.z_dim, args.h_dim)
+    encoder = Encoder_2(x_dim, args.z_dim, args.h_dim)
     encoder_path = os.path.join(args.in_dir, 'encoder.npz')
     chainer.serializers.load_npz(encoder_path, encoder, strict=True)
 
     # sample using gaussian distribution
-    gaussian_0 = np.random.normal(0, 1, (SAMPLE_SIZE, args.z_dim)).astype(np.float32)
-    gaussian_1 = np.random.normal(0, 1, (SAMPLE_SIZE, args.z_dim)).astype(np.float32)
-    gaussian_2 = np.random.normal(0, 1, (SAMPLE_SIZE, args.z_dim)).astype(np.float32)
-    gaussian_3 = np.random.normal(0, 1, (SAMPLE_SIZE, args.z_dim)).astype(np.float32)
+    gaussian = np.random.normal(0, 1, (SAMPLE_SIZE, args.z_dim)).astype(np.float32)
 
     # make xs
-    values = np.identity(x_dim).astype(np.float32)
-    x0s = make_xs(0, values)
-    x1s = make_xs(1, values)
-    x2s = make_xs(2, values)
-    x3s = make_xs(3, values)
+    dataset = Dataset(SAMPLE_SIZE)
+    dataset.make()
+    xs = dataset.dataset
 
     with chainer.using_config('train', False):
         # encode them
-        z0s = encoder(x0s, gaussian_0)
-        z1s = encoder(x1s, gaussian_1)
-        z2s = encoder(x2s, gaussian_2)
-        z3s = encoder(x3s, gaussian_3)
+        zs = encoder(xs, gaussian)
+
+    z0s = []
+    z1s = []
+    z2s = []
+    z3s = []
+    for x, z in zip(xs, zs):
+        index = np.argmax(x)
+        if index == 0:
+            z0s.append(z.data)
+        elif index == 1:
+            z1s.append(z.data)
+        elif index == 2:
+            z2s.append(z.data)
+        else:
+            z3s.append(z.data)
+
+    z0s = np.array(z0s)
+    z1s = np.array(z1s)
+    z2s = np.array(z2s)
+    z3s = np.array(z3s)
 
     # save them
-    np.save(os.path.join(args.in_dir, 'z0s.npy'), z0s.data)
-    np.save(os.path.join(args.in_dir, 'z1s.npy'), z1s.data)
-    np.save(os.path.join(args.in_dir, 'z2s.npy'), z2s.data)
-    np.save(os.path.join(args.in_dir, 'z3s.npy'), z3s.data)
+    np.save(os.path.join(args.in_dir, 'z0s.npy'), z0s)
+    np.save(os.path.join(args.in_dir, 'z1s.npy'), z1s)
+    np.save(os.path.join(args.in_dir, 'z2s.npy'), z2s)
+    np.save(os.path.join(args.in_dir, 'z3s.npy'), z3s)
 
     # reconstruct
-    decoder = net.Decoder(args.z_dim, x_dim, args.h_dim)
+    decoder = Decoder_1(args.z_dim, x_dim, args.h_dim)
     decoder_path = os.path.join(args.in_dir, 'decoder.npz')
     chainer.serializers.load_npz(decoder_path, decoder, strict=True)
 

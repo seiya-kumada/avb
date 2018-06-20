@@ -4,7 +4,11 @@ import argparse
 import os
 from dataset import *  # noqa
 from sampler import *  # noqa
-from net import *  # noqa
+from encoder import *  # noqa
+from decoder import *  # noqa
+from discriminator import *  # noqa
+from phi_loss_calculator import *  # noqa
+from psi_loss_calculator import *  # noqa
 from chainer import optimizers
 from constants import *  # noqa
 
@@ -96,14 +100,14 @@ if __name__ == '__main__':
     # _/_/_/ load model
 
     assert(x_dim == 4)
-    encoder = Encoder(x_dim, args.z_dim, args.h_dim)
-    decoder = Decoder(args.z_dim, x_dim, args.h_dim)
-    discriminator = Discriminator(x_dim, args.z_dim, args.h_dim)
+    encoder = Encoder_2(x_dim, args.z_dim, args.h_dim)
+    decoder = Decoder_1(args.z_dim, x_dim, args.h_dim)
+    discriminator = Discriminator_1(x_dim, args.z_dim, args.h_dim)
 
     update_switch = UpdateSwitch(encoder, decoder, discriminator)
 
-    phi_loss_calculator = PhiLossCalculator_(encoder, decoder, discriminator)
-    psi_loss_calculator = PsiLossCalculator__(encoder, discriminator)
+    phi_loss_calculator = PhiLossCalculator_2(encoder, decoder, discriminator)
+    psi_loss_calculator = PsiLossCalculator_2(encoder, discriminator)
 
     # _/_/_/ make optimizers
 
