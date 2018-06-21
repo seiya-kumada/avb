@@ -19,7 +19,7 @@ def parse_args():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--out', '-o', default='result',
                         help='Directory to output the result')
-    parser.add_argument('--epochs', '-e', default=100, type=int,
+    parser.add_argument('--epochs', '-e', default=200, type=int,
                         help='number of epochs to learn')
     parser.add_argument('--z_dim', '-z', default=2, type=int,
                         help='dimention of encoded vector')

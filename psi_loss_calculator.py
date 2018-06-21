@@ -54,7 +54,7 @@ class PsiLossCalculator_3(chainer.Chain):
         a = F.sigmoid_cross_entropy(posterior, np.ones_like(posterior).astype(np.int32))
         b = F.sigmoid_cross_entropy(prior, np.zeros_like(prior).astype(np.int32))
         c = F.sum(a + b)
-        return c / batch_size
+        return c
 
 
 if __name__ == '__main__':
