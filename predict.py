@@ -9,10 +9,12 @@ import scipy.stats as stats
 from dataset import *  # noqa
 from encoder import *  # noqa
 from decoder import *  # noqa
+from discriminator import *  # noqa
 from constants import *  # noqa
 
-SAMPLE_SIZE = 10000
+SAMPLE_SIZE = 40000
 EPSILON = 1.0e-6
+np.random.seed(12)
 
 
 def calculate_cross_entropy(rxs, txs):
@@ -61,6 +63,15 @@ def calculate_kl_divergence(zs, es):
         v += np.log(a / b)
     v /= es.shape[0]
     return v
+
+
+def calculate_kl_divergence_(dis, xs, zs):
+    a = 0
+    with chainer.using_config('train', False):
+        for i in range(zs.shape[0]):
+            a += dis(xs, zs)
+    a /= zs.shape[0]
+    return np.mean(a.data)
 
 
 def recontruct(decoder, z0s, z1s, z2s, z3s):
@@ -155,5 +166,9 @@ if __name__ == '__main__':
 
     # _/_/_/ calculate KL divergence
 
+    # discriminator = Discriminator_1(x_dim, args.z_dim, args.h_dim)
+    # discriminator_path = os.path.join(args.in_dir, 'discriminator.npz')
+    # chainer.serializers.load_npz(discriminator_path, discriminator, strict=True)
+    # kld = calculate_kl_divergence_(discriminator, xs, zs)
     kld = calculate_kl_divergence(zs, gaussian)
     print('KL divergence:{}'.format(kld))

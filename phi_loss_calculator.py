@@ -35,7 +35,7 @@ class PhiLossCalculator_2(chainer.Chain):
         ys = self.decoder(encoded_zs)
         d_loss = F.bernoulli_nll(xs, ys) / batch_size
         t_loss = F.sum(self.discriminator(xs, encoded_zs)) / batch_size
-        return t_loss + d_loss, t_loss, d_loss
+        return t_loss + d_loss, encoded_zs
 
 
 if __name__ == '__main__':
