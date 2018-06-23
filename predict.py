@@ -9,7 +9,7 @@ from encoder import *  # noqa
 from decoder import *  # noqa
 from constants import *  # noqa
 
-SAMPLE_SIZE = 10000
+SAMPLE_SIZE = 40000
 
 
 def parse_args():
@@ -18,7 +18,7 @@ def parse_args():
                         help='Directory to the trained model')
     parser.add_argument('--z_dim', '-z', default=2, type=int,
                         help='dimention of encoded vector')
-    parser.add_argument('--h_dim', '-hd', default=300, type=int,
+    parser.add_argument('--h_dim', '-hd', default=256, type=int,
                         help='dimention of hidden layer')
     args = parser.parse_args()
     return args
@@ -72,10 +72,10 @@ if __name__ == '__main__':
     z3s = np.array(z3s)
 
     # save them
-    np.save(os.path.join(args.in_dir, 'z0s.npy'), z0s)
-    np.save(os.path.join(args.in_dir, 'z1s.npy'), z1s)
-    np.save(os.path.join(args.in_dir, 'z2s.npy'), z2s)
-    np.save(os.path.join(args.in_dir, 'z3s.npy'), z3s)
+    np.save(os.path.join(args.in_dir, 'posterior_z0s.npy'), z0s)
+    np.save(os.path.join(args.in_dir, 'posterior_z1s.npy'), z1s)
+    np.save(os.path.join(args.in_dir, 'posterior_z2s.npy'), z2s)
+    np.save(os.path.join(args.in_dir, 'posterior_z3s.npy'), z3s)
 
     # reconstruct
     decoder = Decoder_1(args.z_dim, x_dim, args.h_dim)
@@ -90,7 +90,7 @@ if __name__ == '__main__':
         x3s = decoder(z3s, is_sigmoid=True)
 
     # save them
-    np.save(os.path.join(args.in_dir, 'x0s.npy'), x0s.data)
-    np.save(os.path.join(args.in_dir, 'x1s.npy'), x1s.data)
-    np.save(os.path.join(args.in_dir, 'x2s.npy'), x2s.data)
-    np.save(os.path.join(args.in_dir, 'x3s.npy'), x3s.data)
+    np.save(os.path.join(args.in_dir, 'reconstructed_x0s.npy'), x0s.data)
+    np.save(os.path.join(args.in_dir, 'reconstructed_x1s.npy'), x1s.data)
+    np.save(os.path.join(args.in_dir, 'reconstructed_x2s.npy'), x2s.data)
+    np.save(os.path.join(args.in_dir, 'reconstructed_x3s.npy'), x3s.data)

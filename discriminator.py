@@ -58,6 +58,7 @@ class Discriminator_2(chainer.Chain):
         update_links(self, updates)
 
     def __call__(self, xs, zs, activation=F.relu):
+        xs = 2 * xs - 1
         h = F.concat((xs, zs), axis=1)
 
         h = self.l1(h)

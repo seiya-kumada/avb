@@ -19,11 +19,11 @@ def parse_args():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--out', '-o', default='result',
                         help='Directory to output the result')
-    parser.add_argument('--epochs', '-e', default=200, type=int,
+    parser.add_argument('--epochs', '-e', default=400, type=int,
                         help='number of epochs to learn')
     parser.add_argument('--z_dim', '-z', default=2, type=int,
                         help='dimention of encoded vector')
-    parser.add_argument('--h_dim', '-hd', default=300, type=int,
+    parser.add_argument('--h_dim', '-hd', default=256, type=int,
                         help='dimention of hidden layer')
     parser.add_argument('--batch_size', '-b', default=500, type=int,
                         help='learning minibatch size')
@@ -76,6 +76,18 @@ def setup_optimizer(optimizer, loss_calculator):
     # optimizer.add_hook(chainer.optimizer.GradientClipping(1.0))
 
 
+def evaluate(xs, encoder, discriminator):
+    size, _ = xs.shape
+    es = np.random.normal(0, 1, (size, 2)).astype(np.float32)
+    zs = np.random.normal(0, 1, (size, 2)).astype(np.float32)
+
+    with chainer.using_config('train', False):
+        encoded_zs = encoder(xs, es)
+        posterior = np.mean(discriminator(xs, encoded_zs).data)
+        prior = np.mean(discriminator(xs, zs).data)
+    return posterior, prior
+
+
 if __name__ == '__main__':
 
     # _/_/_/ load arguments
@@ -107,14 +119,14 @@ if __name__ == '__main__':
     update_switch = UpdateSwitch(encoder, decoder, discriminator)
 
     phi_loss_calculator = PhiLossCalculator_2(encoder, decoder, discriminator)
-    psi_loss_calculator = PsiLossCalculator_2(encoder, discriminator)
+    psi_loss_calculator = PsiLossCalculator_3(encoder, discriminator)
 
     # _/_/_/ make optimizers
 
-    phi_optimizer = optimizers.Adam()
+    phi_optimizer = optimizers.Adam(beta1=0.5)
     setup_optimizer(phi_optimizer, phi_loss_calculator)
 
-    psi_optimizer = optimizers.Adam()
+    psi_optimizer = optimizers.Adam(beta1=0.5)
     setup_optimizer(psi_optimizer, psi_loss_calculator)
 
     # _/_/_/ train
@@ -125,8 +137,8 @@ if __name__ == '__main__':
     batches = n_train // args.batch_size
     epoch_phi_losses = []
     epoch_psi_losses = []
-    with chainer.using_config('train', True):
-        for epoch in range(args.epochs):
+    for epoch in range(args.epochs):
+        with chainer.using_config('train', True):
             # shuffle dataset
             sampler.shuffle_xs()
 
@@ -153,15 +165,15 @@ if __name__ == '__main__':
             # see loss per epoch
             epoch_phi_loss /= batches
             epoch_psi_loss /= batches
-            print('epoch:{}, phi_loss:{}, psi_loss:{}'.format(epoch,
-                                                              epoch_phi_loss.data,
-                                                              epoch_psi_loss.data))
-            epoch_phi_losses.append(epoch_phi_loss.data)
-            epoch_psi_losses.append(epoch_psi_loss.data)
 
-        np.save(os.path.join(args.out, 'epoch_phi_losses.npy'), np.array(epoch_phi_losses))
-        np.save(os.path.join(args.out, 'epoch_psi_losses.npy'), np.array(epoch_psi_losses))
+        print('epoch:{}, phi_loss:{}, psi_loss:{}'.format(epoch, epoch_phi_loss.data,
+                                                          epoch_psi_loss.data))
+        epoch_phi_losses.append(epoch_phi_loss.data)
+        epoch_psi_losses.append(epoch_psi_loss.data)
 
-        chainer.serializers.save_npz(os.path.join(args.out, 'encoder.npz'), encoder, compression=True)
-        chainer.serializers.save_npz(os.path.join(args.out, 'decoder.npz'), decoder, compression=True)
-        chainer.serializers.save_npz(os.path.join(args.out, 'discriminator.npz'), discriminator, compression=True)
+    np.save(os.path.join(args.out, 'epoch_phi_losses.npy'), np.array(epoch_phi_losses))
+    np.save(os.path.join(args.out, 'epoch_psi_losses.npy'), np.array(epoch_psi_losses))
+
+    chainer.serializers.save_npz(os.path.join(args.out, 'encoder.npz'), encoder, compression=True)
+    chainer.serializers.save_npz(os.path.join(args.out, 'decoder.npz'), decoder, compression=True)
+    chainer.serializers.save_npz(os.path.join(args.out, 'discriminator.npz'), discriminator, compression=True)
