@@ -144,6 +144,8 @@ if __name__ == '__main__':
 
             epoch_phi_loss = 0
             epoch_psi_loss = 0
+            epoch_d_loss = 0
+            epoch_t_loss = 0
 
             for i in range(batches):
                 xs = sampler.sample_xs()
@@ -158,16 +160,19 @@ if __name__ == '__main__':
 
                 # compute phi-gradient(eq.3.7)
                 update_switch.update_models(enc_updates=True, dec_updates=True, dis_updates=False)
-                phi_loss = phi_loss_calculator(xs, zs, es)
+                phi_loss, t_loss, d_loss = phi_loss_calculator(xs, zs, es)
                 update(phi_loss, phi_loss_calculator, phi_optimizer)
                 epoch_phi_loss += phi_loss
+                epoch_d_loss += d_loss
+                epoch_t_loss += t_loss
 
             # see loss per epoch
             epoch_phi_loss /= batches
             epoch_psi_loss /= batches
+            epoch_d_loss /= batches
 
-        print('epoch:{}, phi_loss:{}, psi_loss:{}'.format(epoch, epoch_phi_loss.data,
-                                                          epoch_psi_loss.data))
+        print('epoch:{}, phi_loss:{}, psi_loss:{}, d_loss:{}, t_loss:{}'.format(epoch, epoch_phi_loss.data,
+                                                                                epoch_psi_loss.data, d_loss.data, t_loss.data))
         epoch_phi_losses.append(epoch_phi_loss.data)
         epoch_psi_losses.append(epoch_psi_loss.data)
 

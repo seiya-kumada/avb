@@ -4,12 +4,27 @@ import argparse
 import os
 import chainer
 import numpy as np
+import scipy.stats as stats
+
 from dataset import *  # noqa
 from encoder import *  # noqa
 from decoder import *  # noqa
 from constants import *  # noqa
 
-SAMPLE_SIZE = 40000
+SAMPLE_SIZE = 10000
+EPSILON = 1.0e-6
+
+
+def calculate_cross_entropy(rxs, txs):
+    r = txs * np.log(rxs + EPSILON) + (1 - txs) * np.log(1 - rxs)
+    r = np.sum(r, axis=1)
+    return -np.sum(r)
+
+
+def make_true_samples(index, rxs):
+    size, _ = rxs.shape
+    a = np.eye(4)[index].reshape(1, -1)
+    return a.repeat(size, axis=0)
 
 
 def parse_args():
@@ -27,6 +42,35 @@ def parse_args():
 def make_xs(index, values):
     indices = np.array([index] * SAMPLE_SIZE)
     return values[indices]
+
+
+def encode(encoder, xs, gaussian):
+    with chainer.using_config('train', False):
+        # encode them
+        zs = encoder(xs, gaussian)
+
+    return zs
+
+
+# この値がマイナスになる。
+def calculate_kl_divergence(zs, es):
+    v = 0
+    for (z, e) in zip(zs, es):
+        a = np.prod(stats.norm.pdf(e))
+        b = np.prod(stats.norm.pdf(z.data))
+        v += np.log(a / b)
+    v /= es.shape[0]
+    return v
+
+
+def recontruct(decoder, z0s, z1s, z2s, z3s):
+    with chainer.using_config('train', False):
+        # encode them
+        x0s = decoder(z0s, is_sigmoid=True)
+        x1s = decoder(z1s, is_sigmoid=True)
+        x2s = decoder(z2s, is_sigmoid=True)
+        x3s = decoder(z3s, is_sigmoid=True)
+    return (x0s, x1s, x2s, x3s)
 
 
 if __name__ == '__main__':
@@ -47,10 +91,9 @@ if __name__ == '__main__':
     dataset.make()
     xs = dataset.dataset
 
-    with chainer.using_config('train', False):
-        # encode them
-        zs = encoder(xs, gaussian)
+    # _/_/_/ encode
 
+    zs = encode(encoder, xs, gaussian)
     z0s = []
     z1s = []
     z2s = []
@@ -77,20 +120,40 @@ if __name__ == '__main__':
     np.save(os.path.join(args.in_dir, 'posterior_z2s.npy'), z2s)
     np.save(os.path.join(args.in_dir, 'posterior_z3s.npy'), z3s)
 
-    # reconstruct
+    # _/_/_/ reconstruct
+
     decoder = Decoder_1(args.z_dim, x_dim, args.h_dim)
     decoder_path = os.path.join(args.in_dir, 'decoder.npz')
     chainer.serializers.load_npz(decoder_path, decoder, strict=True)
 
-    with chainer.using_config('train', False):
-        # encode them
-        x0s = decoder(z0s, is_sigmoid=True)
-        x1s = decoder(z1s, is_sigmoid=True)
-        x2s = decoder(z2s, is_sigmoid=True)
-        x3s = decoder(z3s, is_sigmoid=True)
+    (x0s, x1s, x2s, x3s) = recontruct(decoder, z0s, z1s, z2s, z3s)
 
     # save them
     np.save(os.path.join(args.in_dir, 'reconstructed_x0s.npy'), x0s.data)
     np.save(os.path.join(args.in_dir, 'reconstructed_x1s.npy'), x1s.data)
     np.save(os.path.join(args.in_dir, 'reconstructed_x2s.npy'), x2s.data)
     np.save(os.path.join(args.in_dir, 'reconstructed_x3s.npy'), x3s.data)
+
+    # _/_/_/ calculate reconstruction error
+
+    # make true samples
+    true_x0s = make_true_samples(0, x0s.data)
+    true_x1s = make_true_samples(1, x1s.data)
+    true_x2s = make_true_samples(2, x2s.data)
+    true_x3s = make_true_samples(3, x3s.data)
+
+    # calculate reconstruction error
+    cross_entropy_0 = calculate_cross_entropy(x0s.data, true_x0s)
+    cross_entropy_1 = calculate_cross_entropy(x1s.data, true_x1s)
+    cross_entropy_2 = calculate_cross_entropy(x2s.data, true_x2s)
+    cross_entropy_3 = calculate_cross_entropy(x3s.data, true_x3s)
+
+    v = cross_entropy_0 + cross_entropy_1 + cross_entropy_2 + cross_entropy_3
+    t = true_x0s.shape[0] + true_x1s.shape[0] + true_x2s.shape[0] + true_x3s.shape[0]
+    v /= t
+    print('reconstruction error:{}'.format(v))
+
+    # _/_/_/ calculate KL divergence
+
+    kld = calculate_kl_divergence(zs, gaussian)
+    print('KL divergence:{}'.format(kld))
