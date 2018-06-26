@@ -20,7 +20,7 @@ def parse_args():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--out', '-o', default='result',
                         help='Directory to output the result')
-    parser.add_argument('--epochs', '-e', default=400, type=int,
+    parser.add_argument('--epochs', '-e', default=500, type=int,
                         help='number of epochs to learn')
     parser.add_argument('--z_dim', '-z', default=2, type=int,
                         help='dimention of encoded vector')
@@ -124,10 +124,10 @@ if __name__ == '__main__':
 
     # _/_/_/ make optimizers
 
-    phi_optimizer = optimizers.Adam(beta1=0.5)
+    phi_optimizer = optimizers.Adam(beta1=0.3)
     setup_optimizer(phi_optimizer, phi_loss_calculator)
 
-    psi_optimizer = optimizers.Adam(beta1=0.5)
+    psi_optimizer = optimizers.Adam(beta1=0.3)
     setup_optimizer(psi_optimizer, psi_loss_calculator)
 
     # _/_/_/ train
