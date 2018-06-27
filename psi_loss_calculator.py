@@ -47,7 +47,7 @@ class PsiLossCalculator_3(chainer.Chain):
             self.discriminator = discriminator
 
     def __call__(self, xs, zs, es):
-        batch_size = xs.shape[0]
+        # batch_size = xs.shape[0]
         encoded_zs = self.encoder(xs, es)
         posterior = self.discriminator(xs, encoded_zs)
         prior = self.discriminator(xs, zs)

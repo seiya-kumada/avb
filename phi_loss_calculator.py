@@ -3,7 +3,6 @@
 
 import chainer
 import chainer.functions as F
-# TODO: remove init_scope!
 
 
 class PhiLossCalculator_1(chainer.Chain):

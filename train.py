@@ -22,7 +22,7 @@ def parse_args():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--out', '-o', default='result',
                         help='Directory to output the result')
-    parser.add_argument('--epochs', '-e', default=1, type=int,
+    parser.add_argument('--epochs', '-e', default=50, type=int,
                         help='number of epochs to learn')
     parser.add_argument('--z_dim', '-z', default=2, type=int,
                         help='dimention of encoded vector')
@@ -30,19 +30,19 @@ def parse_args():
                         help='dimention of hidden layer')
     parser.add_argument('--batch_size', '-b', default=500, type=int,
                         help='learning minibatch size')
-    parser.add_argument('--enc_path', '-encp', type=str, default='',  # result/encoder.npz',
+    parser.add_argument('--enc_path', '-encp', type=str, default='result_200/encoder.npz',
                         help='path to a trained encoder model')
-    parser.add_argument('--dec_path', '-decp', type=str, default='',  # result/decoder.npz',
+    parser.add_argument('--dec_path', '-decp', type=str, default='result_200/decoder.npz',
                         help='path to a trained decoder model')
-    parser.add_argument('--dis_path', '-disp', type=str, default='',  # result/discriminator.npz',
+    parser.add_argument('--dis_path', '-disp', type=str, default='result_200/discriminator.npz',
                         help='path to a trained discriminator model')
-    parser.add_argument('--phi_path', '-phip', type=str, default='',  # result/phi_optimizer.npz',
+    parser.add_argument('--phi_path', '-phip', type=str, default='result_200/phi_optimizer.npz',
                         help='path to a trained phi optimizer')
-    parser.add_argument('--psi_path', '-psip', type=str, default='',  # result/psi_optimizer.npz',
+    parser.add_argument('--psi_path', '-psip', type=str, default='result_200/psi_optimizer.npz',
                         help='path to a trained psi optimizer')
-    parser.add_argument('--phi_loss_path', '-philp', type=str, default='',  # result/phi_loss_calculator.npz',
+    parser.add_argument('--phi_loss_path', '-philp', type=str, default='result_200/phi_loss_calculator.npz',
                         help='path to a trained phi loss calculator')
-    parser.add_argument('--psi_loss_path', '-psilp', type=str, default='',  # result/psi_loss_calculator.npz',
+    parser.add_argument('--psi_loss_path', '-psilp', type=str, default='result_200/psi_loss_calculator.npz',
                         help='path to a trained psi loss calculator')
     args = parser.parse_args()
     return args
@@ -110,54 +110,10 @@ def evaluate(xs, encoder, discriminator):
     return posterior, prior
 
 
-def load_enc_model(x_dim, args):
-    if args.enc_path:
-        encoder = Encoder_2(x_dim, args.z_dim, args.h_dim)
-        chainer.serializers.load_npz(args.enc_path, encoder, strict=True)
-        return encoder
-    else:
-        encoder = Encoder_2(x_dim, args.z_dim, args.h_dim)
-        return encoder
-
-
-def load_dec_model(x_dim, args):
-    if args.dec_path:
-        decoder = Decoder_1(args.z_dim, x_dim, args.h_dim)
-        chainer.serializers.load_npz(args.dec_path, decoder, strict=True)
-        return decoder
-    else:
-        decoder = Decoder_1(args.z_dim, x_dim, args.h_dim)
-        return decoder
-
-
-def load_dis_model(x_dim, args):
-    if args.dis_path:
-        discriminator = Discriminator_1(x_dim, args.z_dim, args.h_dim)
-        chainer.serializers.load_npz(args.dis_path, discriminator, strict=True)
-        return discriminator
-    else:
-        discriminator = Discriminator_1(x_dim, args.z_dim, args.h_dim)
-        return discriminator
-
-
-def load_phi_optimizer(beta1):
-    if args.phi_path:
-        phi_optimizer = optimizers.Adam(beta1=beta1)
-        chainer.serializers.load_hdf5(args.phi_path, phi_optimizer)
-        return phi_optimizer
-    else:
-        phi_optimizer = optimizers.Adam(beta1=beta1)
-        return phi_optimizer
-
-
-def load_psi_optimizer(beta1):
-    if args.psi_path:
-        psi_optimizer = optimizers.Adam(beta1=beta1)
-        chainer.serializers.load_hdf5(args.psi_path, psi_optimizer)
-        return psi_optimizer
-    else:
-        psi_optimizer = optimizers.Adam(beta1=beta1)
-        return psi_optimizer
+def load_if_exists(path, name, model):
+    if path:
+        print('load trained {}'.format(name))
+        chainer.serializers.load_npz(path, model, strict=True)
 
 
 if __name__ == '__main__':
@@ -195,7 +151,7 @@ if __name__ == '__main__':
 
     # _/_/_/ make optimizers
 
-    beta1 = 0.3
+    beta1 = 0.4
     phi_optimizer = optimizers.Adam(beta1=beta1)
     setup_optimizer(phi_optimizer, phi_loss_calculator)
 
@@ -204,33 +160,13 @@ if __name__ == '__main__':
 
     # _/_/_/ if there exist trained models, load them
 
-    if args.enc_path:
-        print('load trained encoder')
-        chainer.serializers.load_npz(args.enc_path, encoder, strict=True)
-
-    if args.dec_path:
-        print('load trained decoder')
-        chainer.serializers.load_npz(args.dec_path, decoder, strict=True)
-
-    if args.dis_path:
-        print('load trained discriminator')
-        chainer.serializers.load_npz(args.dis_path, discriminator, strict=True)
-
-    if args.phi_path:
-        print('load trained phi_optimizer')
-        chainer.serializers.load_npz(args.phi_path, phi_optimizer, strict=True)
-
-    if args.psi_path:
-        print('load trained psi_optimizer')
-        chainer.serializers.load_npz(args.psi_path, psi_optimizer, strict=True)
-
-    if args.phi_loss_path:
-        print('load trained phi_loss_calculator')
-        chainer.serializers.load_npz(args.phi_loss_path, phi_loss_calculator, strict=True)
-
-    if args.psi_loss_path:
-        print('load trained psi_loss_calculator')
-        chainer.serializers.load_npz(args.psi_loss_path, psi_loss_calculator, strict=True)
+    load_if_exists(args.enc_path, 'encoder', encoder)
+    load_if_exists(args.dec_path, 'decoder', decoder)
+    load_if_exists(args.dis_path, 'discriminator', discriminator)
+    load_if_exists(args.phi_path, 'phi_optimizer', phi_optimizer)
+    load_if_exists(args.psi_path, 'psi_optimizer', psi_optimizer)
+    load_if_exists(args.phi_loss_path, 'phi_loss_calculator', phi_loss_calculator)
+    load_if_exists(args.psi_loss_path, 'psi_loss_calculator', psi_loss_calculator)
 
     # _/_/_/ train
 
