@@ -105,3 +105,5 @@ venv.bak/
 result/*
 result_good/*
 result_*/*
+.DS_Store
+h_dim=256/*

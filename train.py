@@ -22,7 +22,7 @@ def parse_args():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--out', '-o', default='result',
                         help='Directory to output the result')
-    parser.add_argument('--epochs', '-e', default=50, type=int,
+    parser.add_argument('--epochs', '-e', default=400, type=int,
                         help='number of epochs to learn')
     parser.add_argument('--z_dim', '-z', default=2, type=int,
                         help='dimention of encoded vector')
@@ -30,19 +30,19 @@ def parse_args():
                         help='dimention of hidden layer')
     parser.add_argument('--batch_size', '-b', default=500, type=int,
                         help='learning minibatch size')
-    parser.add_argument('--enc_path', '-encp', type=str, default='result_200/encoder.npz',
+    parser.add_argument('--enc_path', '-encp', type=str, default='',  # result_200/encoder.npz',
                         help='path to a trained encoder model')
-    parser.add_argument('--dec_path', '-decp', type=str, default='result_200/decoder.npz',
+    parser.add_argument('--dec_path', '-decp', type=str, default='',  # result_200/decoder.npz',
                         help='path to a trained decoder model')
-    parser.add_argument('--dis_path', '-disp', type=str, default='result_200/discriminator.npz',
+    parser.add_argument('--dis_path', '-disp', type=str, default='',  # result_200/discriminator.npz',
                         help='path to a trained discriminator model')
-    parser.add_argument('--phi_path', '-phip', type=str, default='result_200/phi_optimizer.npz',
+    parser.add_argument('--phi_path', '-phip', type=str, default='',  # result_200/phi_optimizer.npz',
                         help='path to a trained phi optimizer')
-    parser.add_argument('--psi_path', '-psip', type=str, default='result_200/psi_optimizer.npz',
+    parser.add_argument('--psi_path', '-psip', type=str, default='',  # result_200/psi_optimizer.npz',
                         help='path to a trained psi optimizer')
-    parser.add_argument('--phi_loss_path', '-philp', type=str, default='result_200/phi_loss_calculator.npz',
+    parser.add_argument('--phi_loss_path', '-philp', type=str, default='',  # result_200/phi_loss_calculator.npz',
                         help='path to a trained phi loss calculator')
-    parser.add_argument('--psi_loss_path', '-psilp', type=str, default='result_200/psi_loss_calculator.npz',
+    parser.add_argument('--psi_loss_path', '-psilp', type=str, default='',  # result_200/psi_loss_calculator.npz',
                         help='path to a trained psi loss calculator')
     args = parser.parse_args()
     return args
@@ -151,7 +151,7 @@ if __name__ == '__main__':
 
     # _/_/_/ make optimizers
 
-    beta1 = 0.4
+    beta1 = 0.5
     phi_optimizer = optimizers.Adam(beta1=beta1)
     setup_optimizer(phi_optimizer, phi_loss_calculator)
 
