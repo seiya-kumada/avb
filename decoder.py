@@ -5,12 +5,11 @@ import xavier
 import chainer
 import chainer.links as L
 import chainer.functions as F
-# import numpy as np
 from utils import *  # noqa
 
 
 # This class represents a parameter of p(x|z).
-# Now a paramter of the Bernoulli distribution is calculated.
+# A paramter of the Bernoulli distribution is calculated.
 class Decoder_1(chainer.Chain):
 
     def __init__(self, z_dim, x_dim=1, h_dim=512):

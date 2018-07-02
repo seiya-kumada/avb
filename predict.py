@@ -54,7 +54,7 @@ def encode(encoder, xs, gaussian):
     return zs
 
 
-# この値がマイナスになる。
+# この値がマイナスになる...
 def calculate_kl_divergence(zs, es):
     v = 0
     for (z, e) in zip(zs, es):
