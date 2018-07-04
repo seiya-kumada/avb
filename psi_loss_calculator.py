@@ -41,7 +41,7 @@ class PsiLossCalculator_2(chainer.Chain):
 class PsiLossCalculator_3(chainer.Chain):
 
     def __init__(self, encoder, discriminator):
-        super().__init__()
+        super(PsiLossCalculator_3, self).__init__()
         with self.init_scope():
             self.encoder = encoder
             self.discriminator = discriminator

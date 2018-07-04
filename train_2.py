@@ -12,6 +12,8 @@ from phi_loss_calculator import *  # noqa
 from psi_loss_calculator import *  # noqa
 from chainer import optimizers
 from constants import *  # noqa
+# http://studylog.hateblo.jp/entry/2016/01/05/212830
+# http://ensekitt.hatenablog.com/entry/2017/12/13/200000
 
 
 def parse_args():
@@ -28,19 +30,19 @@ def parse_args():
                         help='dimention of hidden layer')
     parser.add_argument('--batch_size', '-b', default=500, type=int,
                         help='learning minibatch size')
-    parser.add_argument('--enc_path', '-encp', type=str, default='',
+    parser.add_argument('--enc_path', '-encp', type=str, default='',  # result_200/encoder.npz',
                         help='path to a trained encoder model')
-    parser.add_argument('--dec_path', '-decp', type=str, default='',
+    parser.add_argument('--dec_path', '-decp', type=str, default='',  # result_200/decoder.npz',
                         help='path to a trained decoder model')
-    parser.add_argument('--dis_path', '-disp', type=str, default='',
+    parser.add_argument('--dis_path', '-disp', type=str, default='',  # result_200/discriminator.npz',
                         help='path to a trained discriminator model')
-    parser.add_argument('--phi_path', '-phip', type=str, default='',
+    parser.add_argument('--phi_path', '-phip', type=str, default='',  # result_200/phi_optimizer.npz',
                         help='path to a trained phi optimizer')
-    parser.add_argument('--psi_path', '-psip', type=str, default='',
+    parser.add_argument('--psi_path', '-psip', type=str, default='',  # result_200/psi_optimizer.npz',
                         help='path to a trained psi optimizer')
-    parser.add_argument('--phi_loss_path', '-philp', type=str, default='',
+    parser.add_argument('--phi_loss_path', '-philp', type=str, default='',  # result_200/phi_loss_calculator.npz',
                         help='path to a trained phi loss calculator')
-    parser.add_argument('--psi_loss_path', '-psilp', type=str, default='',
+    parser.add_argument('--psi_loss_path', '-psilp', type=str, default='',  # result_200/psi_loss_calculator.npz',
                         help='path to a trained psi loss calculator')
     args = parser.parse_args()
     return args
@@ -174,7 +176,7 @@ if __name__ == '__main__':
     batches = n_train // args.batch_size
     epoch_phi_losses = []
     epoch_psi_losses = []
-
+    epoch_kls = []
     for epoch in range(args.epochs):
         with chainer.using_config('train', True):
             # shuffle dataset
@@ -182,6 +184,7 @@ if __name__ == '__main__':
 
             epoch_phi_loss = 0
             epoch_psi_loss = 0
+            epoch_kl = 0
 
             for i in range(batches):
                 xs = sampler.sample_xs()
@@ -189,33 +192,33 @@ if __name__ == '__main__':
                 es = sampler.sample_es()
 
                 # compute psi-gradient(eq.3.3)
-                update_switch.update_models(enc_updates=False, dec_updates=False,
-                                            dis_updates=True)
+                update_switch.update_models(enc_updates=False, dec_updates=False, dis_updates=True)
                 psi_loss = psi_loss_calculator(xs, zs, es)
                 update(psi_loss, psi_loss_calculator, psi_optimizer)
                 epoch_psi_loss += psi_loss
 
                 # compute phi-gradient(eq.3.7)
-                update_switch.update_models(enc_updates=True, dec_updates=True,
-                                            dis_updates=False)
-                phi_loss, _ = phi_loss_calculator(xs, zs, es)
+                update_switch.update_models(enc_updates=True, dec_updates=True, dis_updates=False)
+                phi_loss, encoded_zs = phi_loss_calculator(xs, zs, es)
+                kl = calculate_kl_divergence(encoded_zs, es)
                 update(phi_loss, phi_loss_calculator, phi_optimizer)
                 epoch_phi_loss += phi_loss
-
+                epoch_kl += kl
             # end for ...
             # see loss per epoch
             epoch_phi_loss /= batches
             epoch_psi_loss /= batches
-
+            epoch_kl /= batches
         # end with ...
-        print('epoch:{}, phi_loss:{}, psi_loss:{}'.format(epoch, epoch_phi_loss.data,
-                                                          epoch_psi_loss.data))
+        print('epoch:{}, phi_loss:{}, psi_loss:{}, kl:{}'.format(epoch, epoch_phi_loss.data,
+                                                                 epoch_psi_loss.data, epoch_kl))
         epoch_phi_losses.append(epoch_phi_loss.data)
         epoch_psi_losses.append(epoch_psi_loss.data)
-
+        epoch_kls.append(epoch_kl)
     # end for ...
     np.save(os.path.join(args.out, 'epoch_phi_losses.npy'), np.array(epoch_phi_losses))
     np.save(os.path.join(args.out, 'epoch_psi_losses.npy'), np.array(epoch_psi_losses))
+    np.save(os.path.join(args.out, 'epoch_kls.npy'), np.array(epoch_kls))
 
     chainer.serializers.save_npz(os.path.join(args.out, 'encoder.npz'), encoder, compression=True)
     chainer.serializers.save_npz(os.path.join(args.out, 'decoder.npz'), decoder, compression=True)

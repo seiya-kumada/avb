@@ -23,7 +23,7 @@ class PhiLossCalculator_1(chainer.Chain):
 class PhiLossCalculator_2(chainer.Chain):
 
     def __init__(self, encoder, decoder, discriminator):
-        super().__init__()
+        super(PhiLossCalculator_2, self).__init__()
         with self.init_scope():
             self.encoder = encoder
             self.decoder = decoder
