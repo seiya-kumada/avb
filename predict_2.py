@@ -88,6 +88,8 @@ if __name__ == '__main__':
     dataset = Dataset(SAMPLE_SIZE, PIXEL_SIZE)
     dataset.make()
     xs = dataset.dataset
+    if GPU >= 0:
+        xs = chainer.cuda.to_cpu(xs)
 
     # _/_/_/ encode
 
