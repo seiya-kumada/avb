@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 # import argparse
 import os
+import numpy as np
+from utils import *  # noqa
 from constants import *  # noqa
-from predict import *  # noqa
 from dataset import *  # noqa
 from sampler import *  # noqa
 from encoder import *  # noqa
@@ -15,6 +16,9 @@ from chainer import optimizers
 from constants import *  # noqa
 # http://studylog.hateblo.jp/entry/2016/01/05/212830
 # http://ensekitt.hatenablog.com/entry/2017/12/13/200000
+xp = np
+if GPU >= 0:
+    xp = chainer.cuda.cupy
 
 
 def show_arg(name, arg):
@@ -66,18 +70,6 @@ def setup_optimizer(optimizer, loss_calculator):
     optimizer.setup(loss_calculator)
 
 
-def evaluate(xs, encoder, discriminator):
-    size, _ = xs.shape
-    es = np.random.normal(0, 1, (size, 2)).astype(np.float32)
-    zs = np.random.normal(0, 1, (size, 2)).astype(np.float32)
-
-    with chainer.using_config('train', False):
-        encoded_zs = encoder(xs, es)
-        posterior = np.mean(discriminator(xs, encoded_zs).data)
-        prior = np.mean(discriminator(xs, zs).data)
-    return posterior, prior
-
-
 def load_if_exists(path, name, model):
     if path:
         print('load trained {}'.format(name))
@@ -110,11 +102,18 @@ if __name__ == '__main__':
     encoder = Encoder_2(x_dim, Z_DIM, H_DIM)
     decoder = Decoder_1(Z_DIM, x_dim, H_DIM)
     discriminator = Discriminator_1(x_dim, Z_DIM, H_DIM)
+    if GPU >= 0:
+        encoder.to_gpu()
+        decoder.to_gpu()
+        discriminator.to_gpu()
 
     update_switch = UpdateSwitch(encoder, decoder, discriminator)
 
     phi_loss_calculator = PhiLossCalculator_2(encoder, decoder, discriminator)
     psi_loss_calculator = PsiLossCalculator_3(encoder, discriminator)
+    if GPU >= 0:
+        phi_loss_calculator.to_gpu()
+        psi_loss_calculator.to_gpu()
 
     # _/_/_/ make optimizers
 
@@ -166,7 +165,7 @@ if __name__ == '__main__':
                 # compute phi-gradient(eq.3.7)
                 update_switch.update_models(enc_updates=True, dec_updates=True, dis_updates=False)
                 phi_loss, encoded_zs = phi_loss_calculator(xs, zs, es)
-                kl = calculate_kl_divergence(encoded_zs, es)
+                kl = calculate_kl_divergence(encoded_zs.data, es)
                 update(phi_loss, phi_loss_calculator, phi_optimizer)
                 epoch_phi_loss += phi_loss
                 epoch_kl += kl

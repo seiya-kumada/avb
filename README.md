@@ -43,6 +43,7 @@ train.pyとpredict.pyの結果を描画する。
 
 # train_2.py
 train.pyはpixel_size=4だが、これを可変長にしたもの。
+さらに、GPU対応にしたもの。CPUも可。
 
 # predict_2.py
 train_2.pyに対応して使うもの。

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+./dataset.py
+./decoder.py
+./discriminator.py
+./encoder.py
+./phi_loss_calculator.py
+./psi_loss_calculator.py
+./sampler.py
+./theta_loss_calculator.py
+

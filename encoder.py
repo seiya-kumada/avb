@@ -5,7 +5,6 @@ import xavier
 import chainer
 import chainer.links as L
 import chainer.functions as F
-import numpy as np
 from utils import *  # noqa
 
 # what does 'reuse' in tensorflow mean?
@@ -150,6 +149,11 @@ class Encoder_4(chainer.Chain):
 
 if __name__ == '__main__':
     import unittest
+    import numpy as np
+    from constants import *  # noqa
+    xp = np
+    if GPU >= 0:
+        xp = chainer.cuda.cupy
 
     class TestEncoder_1(unittest.TestCase):
 
@@ -157,9 +161,11 @@ if __name__ == '__main__':
             batch_size = 3
             x_dim = 4
             eps_dim = 2
-            xs = np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32)
-            eps = np.arange(batch_size * eps_dim).reshape(batch_size, eps_dim).astype(np.float32)
+            xs = xp.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(xp.float32)
+            eps = xp.arange(batch_size * eps_dim).reshape(batch_size, eps_dim).astype(xp.float32)
             encoder = Encoder_1(x_dim, eps_dim)
+            if GPU >= 0:
+                encoder.to_gpu()
             zs = encoder(xs, eps)
             self.assertTrue(zs.shape == (batch_size, eps_dim))
 
@@ -169,9 +175,11 @@ if __name__ == '__main__':
             batch_size = 3
             x_dim = 4
             eps_dim = 2
-            xs = np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32)
-            eps = np.arange(batch_size * eps_dim).reshape(batch_size, eps_dim).astype(np.float32)
+            xs = xp.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(xp.float32)
+            eps = xp.arange(batch_size * eps_dim).reshape(batch_size, eps_dim).astype(xp.float32)
             encoder = Encoder_2(x_dim, eps_dim)
+            if GPU >= 0:
+                encoder.to_gpu()
             zs = encoder(xs, eps)
             self.assertTrue(zs.shape == (batch_size, eps_dim))
 
@@ -181,9 +189,11 @@ if __name__ == '__main__':
             batch_size = 3
             x_dim = 4
             eps_dim = 2
-            xs = np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32)
-            eps = np.arange(batch_size * eps_dim).reshape(batch_size, eps_dim).astype(np.float32)
+            xs = xp.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(xp.float32)
+            eps = xp.arange(batch_size * eps_dim).reshape(batch_size, eps_dim).astype(xp.float32)
             encoder = Encoder_4(x_dim, eps_dim)
+            if GPU >= 0:
+                encoder.to_gpu()
             zs = encoder(xs, eps)
             self.assertTrue(zs.shape == (batch_size, eps_dim))
 

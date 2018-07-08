@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import numpy as np
+import chainer
+from constants import *  # noqa
 np.random.seed(1)
+xp = np
+if GPU >= 0:
+    xp = chainer.cuda.cupy
+    xp.random.seed(1)
 
 
 class Dataset(object):
@@ -12,8 +18,8 @@ class Dataset(object):
 
     # test ok
     def make(self):
-        values = np.identity(self.pixel_size).astype(np.float32)
-        indices = np.random.randint(0, self.pixel_size, (self.sample_size,))
+        values = xp.identity(self.pixel_size).astype(xp.float32)
+        indices = xp.random.randint(0, self.pixel_size, (self.sample_size,))
         self.dataset = values[indices]
 
     # test ok
@@ -38,14 +44,22 @@ if __name__ == '__main__':
             pixel_size = 4
             dataset = Dataset(sample_size, pixel_size)
             dataset.make()
-            answers = np.array([
-                [0, 1, 0, 0],
-                [0, 0, 0, 1],
-                [1, 0, 0, 0],
-                [1, 0, 0, 0],
-                [0, 0, 0, 1]])
-            self.assertTrue(np.all(dataset.dataset == answers))
-            self.assertTrue(dataset.dataset.dtype == np.float32)
+            if GPU >= 0:
+                answers = xp.array([
+                    [1, 0, 0, 0],
+                    [0, 0, 0, 1],
+                    [1, 0, 0, 0],
+                    [1, 0, 0, 0],
+                    [0, 0, 1, 0]])
+            else:
+                answers = xp.array([
+                    [0, 1, 0, 0],
+                    [0, 0, 0, 1],
+                    [1, 0, 0, 0],
+                    [1, 0, 0, 0],
+                    [0, 0, 0, 1]])
+            self.assertTrue(xp.all(dataset.dataset == answers))
+            self.assertTrue(dataset.dataset.dtype == xp.float32)
             self.assertTrue(dataset.dataset.shape == (sample_size, pixel_size))
 
         def test_make_dataset_2(self):
@@ -53,15 +67,22 @@ if __name__ == '__main__':
             pixel_size = 7
             dataset = Dataset(sample_size, pixel_size)
             dataset.make()
-
-            answers = np.array([
-                [0, 1, 0, 0, 0, 0, 0],
-                [0, 0, 0, 1, 0, 0, 0],
-                [0, 0, 0, 0, 0, 1, 0],
-                [1, 0, 0, 0, 0, 0, 0],
-                [1, 0, 0, 0, 0, 0, 0]])
-            self.assertTrue(np.all(dataset.dataset == answers))
-            self.assertTrue(dataset.dataset.dtype == np.float32)
+            if GPU >= 0:
+                answers = xp.array([
+                    [0, 0, 0, 0, 0, 0, 1],
+                    [0, 1, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 1, 0],
+                    [0, 0, 1, 0, 0, 0, 0]])
+            else:
+                answers = xp.array([
+                    [0, 1, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 1, 0],
+                    [1, 0, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 0, 0, 0, 0]])
+            self.assertTrue(xp.all(dataset.dataset == answers))
+            self.assertTrue(dataset.dataset.dtype == xp.float32)
             self.assertTrue(dataset.dataset.shape == (sample_size, pixel_size))
 
         def test_shift(self):
@@ -72,8 +93,8 @@ if __name__ == '__main__':
             a = dataset.dataset.copy()
             dataset.shift()
             a[a == 0] = -1
-            self.assertTrue(np.all(dataset.dataset == a))
-            self.assertTrue(dataset.dataset.dtype == np.float32)
+            self.assertTrue(xp.all(dataset.dataset == a))
+            self.assertTrue(dataset.dataset.dtype == xp.float32)
             self.assertTrue(dataset.dataset.shape == (sample_size, pixel_size))
 
         def test_split(self):

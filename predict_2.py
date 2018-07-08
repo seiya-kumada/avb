@@ -135,9 +135,5 @@ if __name__ == '__main__':
 
     # _/_/_/ calculate KL divergence
 
-    # discriminator = Discriminator_1(x_dim, args.z_dim, args.h_dim)
-    # discriminator_path = os.path.join(args.in_dir, 'discriminator.npz')
-    # chainer.serializers.load_npz(discriminator_path, discriminator, strict=True)
-    # kld = calculate_kl_divergence_(discriminator, xs, zs)
     kld = calculate_kl_divergence(zs, gaussian)
     print('KL divergence:{}'.format(kld))

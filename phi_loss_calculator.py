@@ -3,6 +3,8 @@
 
 import chainer
 import chainer.functions as F
+from theta_loss_calculator import *  # noqa
+from discriminator import *  # noqa
 
 
 class PhiLossCalculator_1(chainer.Chain):
@@ -40,8 +42,12 @@ class PhiLossCalculator_2(chainer.Chain):
 
 if __name__ == '__main__':
     import unittest
-    import numpy as np
     from decoder import *  # noqa
+    from constants import *  # noqa
+    import numpy as np
+    xp = np
+    if GPU >= 0:
+        xp = chainer.cuda.cupy
 
     class TestPhiLossCalculator_1(unittest.TestCase):
 
@@ -49,15 +55,29 @@ if __name__ == '__main__':
             batch_size = 3
             x_dim = 4
             z_dim = 2
-            z = np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32)
+            z = xp.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(xp.float32)
+
             decoder = Decoder_1(z_dim, x_dim)
+            if GPU >= 0:
+                decoder.to_gpu()
+
             p = decoder(z)
             self.assertTrue(p.shape == (batch_size, x_dim))
-            xs = np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32)
-            zs = np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32)
+            xs = xp.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(xp.float32)
+            zs = xp.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(xp.float32)
+
             theta_loss_calculator = ThetaLossCalculator_1(decoder)
+            if GPU >= 0:
+                theta_loss_calculator.to_gpu()
+
             discriminator = Discriminator_1(x_dim, z_dim)
+            if GPU >= 0:
+                discriminator.to_gpu()
+
             phi_loss_calculator = PhiLossCalculator_1(theta_loss_calculator, discriminator)
+            if GPU >= 0:
+                phi_loss_calculator.to_gpu()
+
             loss = phi_loss_calculator(xs, zs)
             self.assertTrue(loss.shape == ())
 

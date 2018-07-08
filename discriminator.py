@@ -74,6 +74,10 @@ class Discriminator_2(chainer.Chain):
 if __name__ == '__main__':
     import unittest
     import numpy as np
+    from constants import *  # noqa
+    xp = np
+    if GPU >= 0:
+        xp = chainer.cuda.cupy
 
     class TestDiscriminator_1(unittest.TestCase):
 
@@ -81,9 +85,11 @@ if __name__ == '__main__':
             batch_size = 3
             x_dim = 4
             z_dim = 2
-            zs = np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32)
-            xs = np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32)
+            zs = xp.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(xp.float32)
+            xs = xp.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(xp.float32)
             discriminator = Discriminator_1(x_dim, z_dim)
+            if GPU >= 0:
+                discriminator.to_gpu()
             rs = discriminator(xs, zs)
             self.assertTrue(rs.shape == (batch_size,))
 
@@ -93,9 +99,11 @@ if __name__ == '__main__':
             batch_size = 3
             x_dim = 4
             z_dim = 2
-            zs = np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32)
-            xs = np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32)
+            zs = xp.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(xp.float32)
+            xs = xp.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(xp.float32)
             discriminator = Discriminator_2(x_dim, z_dim)
+            if GPU >= 0:
+                discriminator.to_gpu()
             rs = discriminator(xs, zs)
             self.assertTrue(rs.shape == (batch_size,))
 

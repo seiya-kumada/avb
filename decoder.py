@@ -66,6 +66,10 @@ class Decoder_2(chainer.Chain):
 if __name__ == '__main__':
     import unittest
     import numpy as np
+    from constants import *  # noqa
+    xp = np
+    if GPU >= 0:
+        xp = chainer.cuda.cupy
 
     class TestDecoder_1(unittest.TestCase):
 
@@ -73,8 +77,10 @@ if __name__ == '__main__':
             batch_size = 3
             x_dim = 4
             z_dim = 2
-            zs = np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32)
+            zs = xp.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(xp.float32)
             decoder = Decoder_1(z_dim, x_dim)
+            if GPU >= 0:
+                decoder.to_gpu()
             xs = decoder(zs)
             self.assertTrue(xs.shape == (batch_size, x_dim))
 
@@ -84,8 +90,10 @@ if __name__ == '__main__':
             batch_size = 3
             x_dim = 4
             z_dim = 2
-            zs = np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32)
+            zs = xp.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(xp.float32)
             decoder = Decoder_2(z_dim, x_dim)
+            if GPU >= 0:
+                decoder.to_gpu()
             xs = decoder(zs)
             self.assertTrue(xs.shape == (batch_size, x_dim))
 

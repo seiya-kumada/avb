@@ -3,7 +3,11 @@
 
 import chainer
 import chainer.functions as F
+from constants import *  # noqa
 import numpy as np
+xp = np
+if GPU >= 0:
+    xp = chainer.cuda.cupy
 
 
 class PsiLossCalculator_1(chainer.Chain):
@@ -51,8 +55,8 @@ class PsiLossCalculator_3(chainer.Chain):
         encoded_zs = self.encoder(xs, es)
         posterior = self.discriminator(xs, encoded_zs)
         prior = self.discriminator(xs, zs)
-        a = F.sigmoid_cross_entropy(posterior, np.ones_like(posterior).astype(np.int32))
-        b = F.sigmoid_cross_entropy(prior, np.zeros_like(prior).astype(np.int32))
+        a = F.sigmoid_cross_entropy(posterior, xp.ones_like(posterior).astype(xp.int32))
+        b = F.sigmoid_cross_entropy(prior, xp.zeros_like(prior).astype(xp.int32))
         c = F.sum(a + b)
         return c
 
@@ -67,15 +71,19 @@ if __name__ == '__main__':
             batch_size = 3
             x_dim = 4
             z_dim = 2
-            zs = np.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(np.float32)
-            xs = np.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(np.float32)
+            zs = xp.arange(batch_size * z_dim).reshape(batch_size, z_dim).astype(xp.float32)
+            xs = xp.arange(batch_size * x_dim).reshape(batch_size, x_dim).astype(xp.float32)
             discriminator = Discriminator_1(x_dim, z_dim)
+            if GPU >= 0:
+                discriminator.to_gpu()
             # for child in discriminator.children():
             #     print(isinstance(child, chainer.Link))
             rs = discriminator(xs, zs)
             self.assertTrue(rs.shape == (batch_size,))
 
             psi_loss_calculator = PsiLossCalculator_1(discriminator)
+            if GPU >= 0:
+                psi_loss_calculator.to_gpu()
             loss = psi_loss_calculator(xs, zs, zs)
             self.assertTrue(loss.shape == ())
 
