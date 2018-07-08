@@ -23,6 +23,7 @@ class Dataset(object):
         self.train = self.dataset[:train_size, :].copy()
         self.test = self.dataset[train_size:, :].copy()
 
+    # test ok
     def shift(self):
         self.dataset = 2 * self.dataset - 1
 
@@ -47,9 +48,25 @@ if __name__ == '__main__':
             self.assertTrue(dataset.dataset.dtype == np.float32)
             self.assertTrue(dataset.dataset.shape == (sample_size, pixel_size))
 
+        def test_make_dataset_2(self):
+            sample_size = 5
+            pixel_size = 7
+            dataset = Dataset(sample_size, pixel_size)
+            dataset.make()
+
+            answers = np.array([
+                [0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0],
+                [1, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 0, 0]])
+            self.assertTrue(np.all(dataset.dataset == answers))
+            self.assertTrue(dataset.dataset.dtype == np.float32)
+            self.assertTrue(dataset.dataset.shape == (sample_size, pixel_size))
+
         def test_shift(self):
             sample_size = 5
-            pixel_size = 4
+            pixel_size = 7
             dataset = Dataset(sample_size, pixel_size)
             dataset.make()
             a = dataset.dataset.copy()
@@ -61,10 +78,11 @@ if __name__ == '__main__':
 
         def test_split(self):
             sample_size = 5
-            dataset = Dataset(sample_size)
+            pixel_size = 8
+            dataset = Dataset(sample_size, pixel_size)
             dataset.make()
             dataset.split(ratio=0.9)
-            self.assertTrue(dataset.train.shape == (4, 4))
-            self.assertTrue(dataset.test.shape == (1, 4))
+            self.assertTrue(dataset.train.shape == (4, pixel_size))
+            self.assertTrue(dataset.test.shape == (1, pixel_size))
 
     unittest.main()

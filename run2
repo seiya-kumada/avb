@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./train_2.py
+./predict_2.py

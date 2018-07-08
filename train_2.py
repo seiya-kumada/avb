@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import argparse
+# import argparse
 import os
+from constants import *  # noqa
 from predict import *  # noqa
 from dataset import *  # noqa
 from sampler import *  # noqa
@@ -16,55 +17,24 @@ from constants import *  # noqa
 # http://ensekitt.hatenablog.com/entry/2017/12/13/200000
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='adversarial variational bayes: avb')
-    parser.add_argument('--gpu', '-g', default=-1, type=int,
-                        help='GPU ID (negative value indicates CPU)')
-    parser.add_argument('--out', '-o', default='result',
-                        help='Directory to output the result')
-    parser.add_argument('--epochs', '-e', default=400, type=int,
-                        help='number of epochs to learn')
-    parser.add_argument('--z_dim', '-z', default=2, type=int,
-                        help='dimention of encoded vector')
-    parser.add_argument('--h_dim', '-hd', default=256, type=int,
-                        help='dimention of hidden layer')
-    parser.add_argument('--batch_size', '-b', default=500, type=int,
-                        help='learning minibatch size')
-    parser.add_argument('--enc_path', '-encp', type=str, default='',  # result_200/encoder.npz',
-                        help='path to a trained encoder model')
-    parser.add_argument('--dec_path', '-decp', type=str, default='',  # result_200/decoder.npz',
-                        help='path to a trained decoder model')
-    parser.add_argument('--dis_path', '-disp', type=str, default='',  # result_200/discriminator.npz',
-                        help='path to a trained discriminator model')
-    parser.add_argument('--phi_path', '-phip', type=str, default='',  # result_200/phi_optimizer.npz',
-                        help='path to a trained phi optimizer')
-    parser.add_argument('--psi_path', '-psip', type=str, default='',  # result_200/psi_optimizer.npz',
-                        help='path to a trained psi optimizer')
-    parser.add_argument('--phi_loss_path', '-philp', type=str, default='',  # result_200/phi_loss_calculator.npz',
-                        help='path to a trained phi loss calculator')
-    parser.add_argument('--psi_loss_path', '-psilp', type=str, default='',  # result_200/psi_loss_calculator.npz',
-                        help='path to a trained psi loss calculator')
-    args = parser.parse_args()
-    return args
-
-
 def show_arg(name, arg):
     print('{}: {}'.format(name, arg))
 
 
-def show_args(args):
+def show_args():
     print('> argument:')
-    show_arg(' gpu', args.gpu)
-    show_arg(' out', args.out)
-    show_arg(' epochs', args.epochs)
-    show_arg(' z_dim', args.z_dim)
-    show_arg(' h_dim', args.h_dim)
-    show_arg(' batch_size', args.batch_size)
-    show_arg(' enc_path', args.enc_path)
-    show_arg(' dec_path', args.dec_path)
-    show_arg(' dis_path', args.dis_path)
-    show_arg(' phi_path', args.phi_path)
-    show_arg(' psi_path', args.psi_path)
+    show_arg(' gpu', GPU)
+    show_arg(' out', OUT)
+    show_arg(' epochs', EPOCHS)
+    show_arg(' z_dim', Z_DIM)
+    show_arg(' h_dim', H_DIM)
+    show_arg(' batch_size', BATCH_SIZE)
+    show_arg(' pixel_size', PIXEL_SIZE)
+    show_arg(' enc_path', ENC_PATH)
+    show_arg(' dec_path', DEC_PATH)
+    show_arg(' dis_path', DIS_PATH)
+    show_arg(' phi_path', PHI_PATH)
+    show_arg(' psi_path', PSI_PATH)
 
 
 def update(loss, calculator, optimizer):
@@ -94,8 +64,6 @@ class UpdateSwitch(object):
 
 def setup_optimizer(optimizer, loss_calculator):
     optimizer.setup(loss_calculator)
-    # optimizer.add_hook(chainer.optimizer.WeightDecay(0.0001))
-    # optimizer.add_hook(chainer.optimizer.GradientClipping(1.0))
 
 
 def evaluate(xs, encoder, discriminator):
@@ -120,12 +88,11 @@ if __name__ == '__main__':
 
     # _/_/_/ load arguments
 
-    args = parse_args()
-    show_args(args)
+    show_args()
 
     # _/_/_/ make a dataset
 
-    dataset = Dataset(SAMPLE_SIZE)
+    dataset = Dataset(SAMPLE_SIZE, PIXEL_SIZE)
     dataset.make()
     dataset.split(DATASET_RATIO)
     print('> dataset size:')
@@ -135,14 +102,14 @@ if __name__ == '__main__':
 
     # _/_/_/ make sampler
 
-    sampler = Sampler(dataset.train, args.z_dim, args.batch_size)
+    sampler = Sampler(dataset.train, Z_DIM, BATCH_SIZE)
 
     # _/_/_/ load model
 
-    assert(x_dim == 4)
-    encoder = Encoder_2(x_dim, args.z_dim, args.h_dim)
-    decoder = Decoder_1(args.z_dim, x_dim, args.h_dim)
-    discriminator = Discriminator_1(x_dim, args.z_dim, args.h_dim)
+    assert(x_dim == PIXEL_SIZE)
+    encoder = Encoder_2(x_dim, Z_DIM, H_DIM)
+    decoder = Decoder_1(Z_DIM, x_dim, H_DIM)
+    discriminator = Discriminator_1(x_dim, Z_DIM, H_DIM)
 
     update_switch = UpdateSwitch(encoder, decoder, discriminator)
 
@@ -151,33 +118,32 @@ if __name__ == '__main__':
 
     # _/_/_/ make optimizers
 
-    beta1 = 0.5
-    phi_optimizer = optimizers.Adam(beta1=beta1)
+    phi_optimizer = optimizers.Adam(beta1=BETA1)
     setup_optimizer(phi_optimizer, phi_loss_calculator)
 
-    psi_optimizer = optimizers.Adam(beta1=beta1)
+    psi_optimizer = optimizers.Adam(beta1=BETA1)
     setup_optimizer(psi_optimizer, psi_loss_calculator)
 
     # _/_/_/ if there exist trained models, load them
 
-    load_if_exists(args.enc_path, 'encoder', encoder)
-    load_if_exists(args.dec_path, 'decoder', decoder)
-    load_if_exists(args.dis_path, 'discriminator', discriminator)
-    load_if_exists(args.phi_path, 'phi_optimizer', phi_optimizer)
-    load_if_exists(args.psi_path, 'psi_optimizer', psi_optimizer)
-    load_if_exists(args.phi_loss_path, 'phi_loss_calculator', phi_loss_calculator)
-    load_if_exists(args.psi_loss_path, 'psi_loss_calculator', psi_loss_calculator)
+    load_if_exists(ENC_PATH, 'encoder', encoder)
+    load_if_exists(DEC_PATH, 'decoder', decoder)
+    load_if_exists(DIS_PATH, 'discriminator', discriminator)
+    load_if_exists(PHI_PATH, 'phi_optimizer', phi_optimizer)
+    load_if_exists(PSI_PATH, 'psi_optimizer', psi_optimizer)
+    load_if_exists(PHI_LOSS_PATH, 'phi_loss_calculator', phi_loss_calculator)
+    load_if_exists(PSI_LOSS_PATH, 'psi_loss_calculator', psi_loss_calculator)
 
     # _/_/_/ train
 
-    if not os.path.exists(args.out):
-        os.mkdir(args.out)
+    if not os.path.exists(OUT):
+        os.mkdir(OUT)
 
-    batches = n_train // args.batch_size
+    batches = n_train // BATCH_SIZE
     epoch_phi_losses = []
     epoch_psi_losses = []
     epoch_kls = []
-    for epoch in range(args.epochs):
+    for epoch in range(EPOCHS):
         with chainer.using_config('train', True):
             # shuffle dataset
             sampler.shuffle_xs()
@@ -216,14 +182,14 @@ if __name__ == '__main__':
         epoch_psi_losses.append(epoch_psi_loss.data)
         epoch_kls.append(epoch_kl)
     # end for ...
-    np.save(os.path.join(args.out, 'epoch_phi_losses.npy'), np.array(epoch_phi_losses))
-    np.save(os.path.join(args.out, 'epoch_psi_losses.npy'), np.array(epoch_psi_losses))
-    np.save(os.path.join(args.out, 'epoch_kls.npy'), np.array(epoch_kls))
+    np.save(os.path.join(OUT, 'epoch_phi_losses.npy'), np.array(epoch_phi_losses))
+    np.save(os.path.join(OUT, 'epoch_psi_losses.npy'), np.array(epoch_psi_losses))
+    np.save(os.path.join(OUT, 'epoch_kls.npy'), np.array(epoch_kls))
 
-    chainer.serializers.save_npz(os.path.join(args.out, 'encoder.npz'), encoder, compression=True)
-    chainer.serializers.save_npz(os.path.join(args.out, 'decoder.npz'), decoder, compression=True)
-    chainer.serializers.save_npz(os.path.join(args.out, 'discriminator.npz'), discriminator, compression=True)
-    chainer.serializers.save_npz(os.path.join(args.out, 'phi_loss_calculator.npz'), phi_loss_calculator, compression=True)
-    chainer.serializers.save_npz(os.path.join(args.out, 'psi_loss_calculator.npz'), psi_loss_calculator, compression=True)
-    chainer.serializers.save_npz(os.path.join(args.out, 'phi_optimizer.npz'), phi_optimizer, compression=True)
-    chainer.serializers.save_npz(os.path.join(args.out, 'psi_optimizer.npz'), psi_optimizer, compression=True)
+    chainer.serializers.save_npz(os.path.join(OUT, 'encoder.npz'), encoder, compression=True)
+    chainer.serializers.save_npz(os.path.join(OUT, 'decoder.npz'), decoder, compression=True)
+    chainer.serializers.save_npz(os.path.join(OUT, 'discriminator.npz'), discriminator, compression=True)
+    chainer.serializers.save_npz(os.path.join(OUT, 'phi_loss_calculator.npz'), phi_loss_calculator, compression=True)
+    chainer.serializers.save_npz(os.path.join(OUT, 'psi_loss_calculator.npz'), psi_loss_calculator, compression=True)
+    chainer.serializers.save_npz(os.path.join(OUT, 'phi_optimizer.npz'), phi_optimizer, compression=True)
+    chainer.serializers.save_npz(os.path.join(OUT, 'psi_optimizer.npz'), psi_optimizer, compression=True)

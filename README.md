@@ -1,19 +1,51 @@
+# constant.py
+パラメータを羅列したもの。
+主に、train_2.pyとpredict_2.pyとvisualize_2.ipynbで使う。
+
 # dataset.py
 ## class Dataset
-This class is used for generating a training dataset, which cosists of images of 2x2 pixels.
-Any one of four pixels has a value of 1, and others have 0s.
+データセットを生成する。
+one-hotベクトルである。
+
+# decoder.py
+デコーダ。
+
+# discriminator.py
+識別器。
+
+# encoder.py
+エンコーダ。
+
+# evaluate.py
+使ってない。
+
+# phi_loss_calculator.py
+(eq. 3.7)。
+
+# predict.py
+予測器。
+
+# psi_loss_calculator.py
+(eq. 3.3)。
 
 # sampler.py
 ## class Sampler
-This class is used for sampling values from an input dataset and a gaussian distribution.
+データセットからのサンプリング、ガウシアンからのサンプリング。
 
-# net.py
-## class Encoder
-Encoder takes 'x' and 'eps' as inputs.
-After 'eps' is transformed by the linear transformation, it is added to x.
-An altenative method to merge 'x' and 'eps' is to concatenate them.
+# theta_loss_calculator.py
+使ってない。
 
-# GradientClipping
-What is a gradient clipping?
-http://isw3.naist.jp/~neubig/student/2015/seitaro-s/161025neuralnet_study_LSTM.pdf
-http://proceedings.mlr.press/v28/pascanu13.pdf
+# train.py
+訓練。
+
+# visualize.ipynb
+train.pyとpredict.pyの結果を描画する。 
+
+# train_2.py
+train.pyはpixel_size=4だが、これを可変長にしたもの。
+
+# predict_2.py
+train_2.pyに対応して使うもの。
+
+# visualize_2.ipynb
+train_2.pyとpredict_2.pyの結果を描画する。 
