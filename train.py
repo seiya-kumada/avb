@@ -149,7 +149,7 @@ if __name__ == '__main__':
 
     # _/_/_/ make optimizers
 
-    beta1 = 0.5
+    beta1 = 0.3
     phi_optimizer = optimizers.Adam(beta1=beta1)
     setup_optimizer(phi_optimizer, phi_loss_calculator)
 
